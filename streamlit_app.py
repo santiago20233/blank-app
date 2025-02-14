@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 st.title("Fificom")
 st.write(
-    "Let me help you with your mom duties"
+    "Ask away mama, I got you!"
 )
 
 from openai import OpenAI
@@ -117,14 +117,14 @@ with st.expander("Need ideas? Click here for example questions."):
     example_questions = {
         "Baby Care": [
             "How often should my 2-month-old feed?",
-            "What's a good bedtime routine for my 6-month-old?"
+            "How long does it take for the belly button to fall?"
         ],
         "Maternal Health": [
             "I'm feeling overwhelmed, what can I do?",
             "How can I take care of my C-section scar?"
         ],
         "Development": [
-            "What milestones should I expect at 4 months?",
+            "How to combine breat milk with formula?",
             "When should I start tummy time?"
         ]
     }
