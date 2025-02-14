@@ -1,25 +1,20 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-st.title("Fificom")
-st.write(
-    "Ask away mama, I got you!"
-)
-
 from openai import OpenAI
 
-
-# Initialize client with API key
-
-
+# Load environment variables
 load_dotenv()
 
+# Initialize OpenAI client
 api_key = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=api_key)
 
+# Streamlit app title and introduction
+st.title("Fificom")
+st.write("Ask away mama, I got you!")
 
-
-
+# System prompt definition
 system_prompt = """You are NurtureMom, an expert AI assistant specifically designed to support new mothers through their parenting journey. Your primary goal is to understand each mother's unique situation before providing tailored advice.
 
 INITIAL APPROACH:
@@ -81,13 +76,12 @@ SPECIAL INSTRUCTIONS:
 - Be prepared to explain terms or concepts if the mother seems unsure
 
 Remember: You're a supportive, knowledgeable companion on the motherhood journey, combining expertise with deep empathy and understanding."""
-# Conversation history
+
+# Initialize chat history in session state
 if "conversation_history" not in st.session_state:
     st.session_state.conversation_history = [{"role": "system", "content": system_prompt}]
- 
-# User input
-user_query = st.text_input("Enter your question:")
- 
+
+# Function to get response from OpenAI
 def get_mom_helper_response(conversation_history):
     try:
         response = client.chat.completions.create(
@@ -101,18 +95,32 @@ def get_mom_helper_response(conversation_history):
         return response.choices[0].message.content
     except Exception as e:
         return f"An error occurred: {str(e)}"
- 
-# Button to submit the query
-if st.button("Submit"):
-    if user_query:
-        st.session_state.conversation_history.append({"role": "user", "content": user_query})
-        response = get_mom_helper_response(st.session_state.conversation_history)
-        st.session_state.conversation_history.append({"role": "assistant", "content": response})
-        st.markdown(f"**NurtureMom:** {response}")
-    else:
-        st.write("Please enter a question.")
- 
-# Example questions
+
+# Display chat messages
+for message in st.session_state.conversation_history[1:]:  # Skip system message
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# User input for new message
+if user_input := st.chat_input("Enter your message..."):
+    # Add user message to history
+    st.session_state.conversation_history.append({"role": "user", "content": user_input})
+    
+    # Display user message in chat
+    with st.chat_message("user"):
+        st.markdown(user_input)
+    
+    # Get response from AI
+    response = get_mom_helper_response(st.session_state.conversation_history)
+    
+    # Add AI response to history
+    st.session_state.conversation_history.append({"role": "assistant", "content": response})
+    
+    # Display AI response in chat
+    with st.chat_message("assistant"):
+        st.markdown(response)
+
+# Example questions for inspiration
 with st.expander("Need ideas? Click here for example questions."):
     example_questions = {
         "Baby Care": [
@@ -124,7 +132,7 @@ with st.expander("Need ideas? Click here for example questions."):
             "How can I take care of my C-section scar?"
         ],
         "Development": [
-            "How to combine breat milk with formula?",
+            "How to combine breast milk with formula?",
             "When should I start tummy time?"
         ]
     }
@@ -132,4 +140,3 @@ with st.expander("Need ideas? Click here for example questions."):
         st.write(f"**{category}:**")
         for q in questions:
             st.write(f"- {q}")
-
