@@ -27,15 +27,15 @@ st.markdown("""
             font-size: 16px;
         }
 
-        /* User messages on the right */
+        /* User messages (WhatsApp green) */
         .user-message {
-            background-color: #4a90e2;
+            background-color: #25D366;
             color: white;
             margin-left: auto;
             text-align: right;
         }
 
-        /* AI messages on the left */
+        /* AI messages (light grey) */
         .ai-message {
             background-color: #ffffff;
             border: 1px solid #ddd;
@@ -63,7 +63,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # App title and introduction
-st.markdown("<div class='title-container'><h1>Fificom 💬</h1><p>Ask away, mama! I got you. 👶💖</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='title-container'><h1>Fificom</h1><p>Ask away, mama! I got you.</p></div>", unsafe_allow_html=True)
 
 # System prompt definition
 system_prompt = """You are NurtureMom, an expert AI assistant specifically designed to support new mothers through their parenting journey. Your primary goal is to understand each mother's unique situation before providing tailored advice.
@@ -104,20 +104,20 @@ def get_mom_helper_response(conversation_history):
 # Display chat messages with nice formatting
 for message in st.session_state.conversation_history[1:]:  # Skip system message
     if message["role"] == "user":
-        # User message on the right
+        # User message on the right (WhatsApp green)
         st.markdown(f"""
         <div class="chat-container" style="justify-content: flex-end;">
             <div class="chat-bubble user-message">
-                <strong>You:</strong> {message['content']}
+                {message['content']}
             </div>
         </div>
         """, unsafe_allow_html=True)
     else:
-        # AI response on the left
+        # AI response on the left (light grey)
         st.markdown(f"""
         <div class="chat-container" style="justify-content: flex-start;">
             <div class="chat-bubble ai-message">
-                <strong>NurtureMom:</strong> {message['content']}
+                {message['content']}
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -127,11 +127,11 @@ if user_input := st.chat_input("Type your message here..."):
     # Add user message to history
     st.session_state.conversation_history.append({"role": "user", "content": user_input})
     
-    # Display user message on the right
+    # Display user message on the right (WhatsApp green)
     st.markdown(f"""
     <div class="chat-container" style="justify-content: flex-end;">
         <div class="chat-bubble user-message">
-            <strong>You:</strong> {user_input}
+            {user_input}
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -142,11 +142,11 @@ if user_input := st.chat_input("Type your message here..."):
     # Add AI response to history
     st.session_state.conversation_history.append({"role": "assistant", "content": response})
 
-    # Display AI response on the left
+    # Display AI response on the left (light grey)
     st.markdown(f"""
     <div class="chat-container" style="justify-content: flex-start;">
         <div class="chat-bubble ai-message">
-            <strong>NurtureMom:</strong> {response}
+            {response}
         </div>
     </div>
     """, unsafe_allow_html=True)
