@@ -29,7 +29,7 @@ st.markdown("""
 
         /* User messages (WhatsApp green) */
         .user-message {
-            background-color: #A8E6CF;
+            background-color: #4a90e2;
             color: white;
             margin-left: auto;
             text-align: right;
