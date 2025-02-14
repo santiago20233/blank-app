@@ -10,9 +10,60 @@ load_dotenv()
 api_key = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=api_key)
 
-# Streamlit app title and introduction
-st.title("Fificom")
-st.write("Ask away mama, I got you!")
+# Inject custom CSS for better UI
+st.markdown("""
+    <style>
+        /* Background */
+        .stApp {
+            background-color: #f7f7f7;
+        }
+        
+        /* Chat bubbles */
+        .chat-bubble {
+            padding: 12px;
+            border-radius: 16px;
+            margin: 8px 0;
+            max-width: 75%;
+            font-size: 16px;
+        }
+
+        /* User messages on the right */
+        .user-message {
+            background-color: #4a90e2;
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+
+        /* AI messages on the left */
+        .ai-message {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            color: black;
+            text-align: left;
+        }
+
+        /* Centering messages */
+        .chat-container {
+            display: flex;
+            width: 100%;
+        }
+
+        /* Prevent long messages from stretching too much */
+        .stMarkdown {
+            word-wrap: break-word;
+        }
+
+        /* Title styling */
+        .title-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# App title and introduction
+st.markdown("<div class='title-container'><h1>Fificom 💬</h1><p>Ask away, mama! I got you. 👶💖</p></div>", unsafe_allow_html=True)
 
 # System prompt definition
 system_prompt = """You are NurtureMom, an expert AI assistant specifically designed to support new mothers through their parenting journey. Your primary goal is to understand each mother's unique situation before providing tailored advice.
@@ -28,52 +79,6 @@ TONE & APPROACH:
 - Professional yet conversational, like a knowledgeable friend
 - Positive, encouraging, and empowering (emphasize 'girl power' for non-serious situations)
 - Realistic but always hopeful
-
-CORE CAPABILITIES:
-1. Baby Care Support:
-- Feeding (breast, bottle, weaning)
-- Sleep patterns and routines
-- Development milestones
-- Daily care (bathing, diapering, etc.)
-- Common health concerns
-
-2. Maternal Wellness:
-- Postpartum recovery (physical and emotional)
-- Mental health support and resources
-- Self-care strategies and importance
-- Work-life balance techniques
-- Relationship adjustments and communication
-
-3. Practical Guidance:
-- Time management for new moms
-- Essential and optional baby gear recommendations
-- Establishing and adapting baby routines
-- Nutrition for nursing mothers and meal planning
-
-RESPONSE STRUCTURE:
-1. Validate feelings and concerns
-2. Ask clarifying questions if needed
-3. Provide clear, actionable advice
-4. Include relevant examples or options
-5. Offer encouragement and support
-
-SAFETY PROTOCOLS:
-- Always recommend professional medical advice for health concerns
-- Clearly distinguish between general advice and medical guidance
-- Flag potential emergencies and advise immediate medical attention
-- Never provide specific medication recommendations
-
-FORMATTING:
-- Use clear, concise paragraphs
-- Highlight key points or options
-- Use gentle, positive language throughout
-
-SPECIAL INSTRUCTIONS:
-- Prioritize understanding the mother's specific situation
-- Empower mothers with knowledge and confidence
-- Adapt your language to match the mother's level of expertise
-- For non-medical issues, infuse responses with 'girl power' energy
-- Be prepared to explain terms or concepts if the mother seems unsure
 
 Remember: You're a supportive, knowledgeable companion on the motherhood journey, combining expertise with deep empathy and understanding."""
 
@@ -96,29 +101,55 @@ def get_mom_helper_response(conversation_history):
     except Exception as e:
         return f"An error occurred: {str(e)}"
 
-# Display chat messages
+# Display chat messages with nice formatting
 for message in st.session_state.conversation_history[1:]:  # Skip system message
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    if message["role"] == "user":
+        # User message on the right
+        st.markdown(f"""
+        <div class="chat-container" style="justify-content: flex-end;">
+            <div class="chat-bubble user-message">
+                <strong>You:</strong> {message['content']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        # AI response on the left
+        st.markdown(f"""
+        <div class="chat-container" style="justify-content: flex-start;">
+            <div class="chat-bubble ai-message">
+                <strong>NurtureMom:</strong> {message['content']}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
 # User input for new message
-if user_input := st.chat_input("Enter your message..."):
+if user_input := st.chat_input("Type your message here..."):
     # Add user message to history
     st.session_state.conversation_history.append({"role": "user", "content": user_input})
     
-    # Display user message in chat
-    with st.chat_message("user"):
-        st.markdown(user_input)
-    
+    # Display user message on the right
+    st.markdown(f"""
+    <div class="chat-container" style="justify-content: flex-end;">
+        <div class="chat-bubble user-message">
+            <strong>You:</strong> {user_input}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
     # Get response from AI
     response = get_mom_helper_response(st.session_state.conversation_history)
-    
+
     # Add AI response to history
     st.session_state.conversation_history.append({"role": "assistant", "content": response})
-    
-    # Display AI response in chat
-    with st.chat_message("assistant"):
-        st.markdown(response)
+
+    # Display AI response on the left
+    st.markdown(f"""
+    <div class="chat-container" style="justify-content: flex-start;">
+        <div class="chat-bubble ai-message">
+            <strong>NurtureMom:</strong> {response}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Example questions for inspiration
 with st.expander("Need ideas? Click here for example questions."):
