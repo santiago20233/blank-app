@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import time
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -27,7 +28,7 @@ st.markdown("""
             font-size: 16px;
         }
 
-        /* User messages (WhatsApp green) */
+        /* User messages (light blue) */
         .user-message {
             background-color: #4a90e2;
             color: white;
@@ -41,6 +42,21 @@ st.markdown("""
             border: 1px solid #ddd;
             color: black;
             text-align: left;
+        }
+
+        /* Typing indicator */
+        .typing-indicator {
+            font-size: 16px;
+            color: #888;
+            font-style: italic;
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0% {content: ".";}
+            33% {content: "..";}
+            66% {content: "...";}
+            100% {content: ".";}
         }
 
         /* Centering messages */
@@ -66,21 +82,7 @@ st.markdown("""
 st.markdown("<div class='title-container'><h1>Fificom</h1><p>Ask away, mama! I got you.</p></div>", unsafe_allow_html=True)
 
 # System prompt definition
-system_prompt = """You are NurtureMom, an expert AI assistant specifically designed to support new mothers through their parenting journey. Your primary goal is to understand each mother's unique situation before providing tailored advice.
-
-INITIAL APPROACH:
-1. Always begin by asking 1-2 short, relevant follow-up questions to clarify the situation.
-2. If the mother seems unsure, offer 3-4 multiple-choice options to help her explain better.
-3. Analyze the situation thoroughly before giving advice.
-
-TONE & APPROACH:
-- Warm, empathetic, and deeply understanding
-- Patient and supportive, especially with repeated or unclear questions
-- Professional yet conversational, like a knowledgeable friend
-- Positive, encouraging, and empowering (emphasize 'girl power' for non-serious situations)
-- Realistic but always hopeful
-
-Remember: You're a supportive, knowledgeable companion on the motherhood journey, combining expertise with deep empathy and understanding."""
+system_prompt = """You are NurtureMom, an expert AI assistant specifically designed to support new mothers through their parenting journey. Your primary goal is to understand each mother's unique situation before providing tailored advice."""
 
 # Initialize chat history in session state
 if "conversation_history" not in st.session_state:
@@ -101,10 +103,10 @@ def get_mom_helper_response(conversation_history):
     except Exception as e:
         return f"An error occurred: {str(e)}"
 
-# Display chat messages with nice formatting
+# Display chat messages with refined formatting
 for message in st.session_state.conversation_history[1:]:  # Skip system message
     if message["role"] == "user":
-        # User message on the right (WhatsApp green)
+        # User message on the right (blue)
         st.markdown(f"""
         <div class="chat-container" style="justify-content: flex-end;">
             <div class="chat-bubble user-message">
@@ -127,7 +129,7 @@ if user_input := st.chat_input("Type your message here..."):
     # Add user message to history
     st.session_state.conversation_history.append({"role": "user", "content": user_input})
     
-    # Display user message on the right (WhatsApp green)
+    # Display user message on the right (blue)
     st.markdown(f"""
     <div class="chat-container" style="justify-content: flex-end;">
         <div class="chat-bubble user-message">
@@ -136,8 +138,25 @@ if user_input := st.chat_input("Type your message here..."):
     </div>
     """, unsafe_allow_html=True)
 
+    # Show typing indicator
+    typing_placeholder = st.empty()
+    with typing_placeholder:
+        st.markdown("""
+        <div class="chat-container" style="justify-content: flex-start;">
+            <div class="chat-bubble ai-message typing-indicator">
+                Typing...
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Simulate a small delay to make it feel natural
+    time.sleep(1.5)
+
     # Get response from AI
     response = get_mom_helper_response(st.session_state.conversation_history)
+
+    # Remove typing indicator
+    typing_placeholder.empty()
 
     # Add AI response to history
     st.session_state.conversation_history.append({"role": "assistant", "content": response})
