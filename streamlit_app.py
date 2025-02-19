@@ -76,11 +76,6 @@ for message in st.session_state.conversation_history[1:]:
         </div>
         """, unsafe_allow_html=True)
 
-# Clear chat history button
-if st.button("Clear Chat"):
-    st.session_state.conversation_history = [{"role": "system", "content": system_prompt}]
-    st.experimental_rerun()
-
 # User input
 typing_placeholder = st.empty()
 if user_input := st.chat_input("Type your message here..."):
