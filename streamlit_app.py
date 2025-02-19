@@ -79,10 +79,10 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # App title and introduction
-st.markdown("<div class='title-container'><h1>Fificom</h1><p>Ask away, mama! I got you.</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='title-container'><h1>Fifi</h1><p>Call me mommy!</p></div>", unsafe_allow_html=True)
 
 # System prompt definition
-system_prompt = """You are NurtureMom, an expert AI assistant specifically designed to support new mothers through their parenting journey. Your primary goal is to understand each mother's unique situation before providing tailored advice."""
+system_prompt = """You are Fifi, an expert AI assistant specifically designed to support new mothers through their parenting journey. Your primary goal is to understand each mother's unique situation before providing tailored advice."""
 
 # Initialize chat history in session state
 if "conversation_history" not in st.session_state:
