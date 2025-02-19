@@ -1,37 +1,75 @@
 import streamlit as st
 import os
 import time
+import firebase_admin
+from firebase_admin import credentials, auth, firestore
 from dotenv import load_dotenv
 from openai import OpenAI
 
 # Load environment variables
 load_dotenv()
 
+# Initialize Firebase
+if not firebase_admin._apps:
+    cred = credentials.Certificate("firebase_credentials.json")  # Ensure you add your Firebase credentials JSON
+    firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
 # Initialize OpenAI client
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-# Inject custom CSS for better UI
-st.markdown("""
-    <style>
-        .stApp { background-color: #f7f7f7; }
-        .chat-bubble {
-            padding: 12px;
-            border-radius: 16px;
-            margin: 8px 0;
-            max-width: 75%;
-            font-size: 16px;
-            word-wrap: break-word;
-        }
-        .user-message { background-color: #4a90e2; color: white; margin-left: auto; text-align: right; }
-        .ai-message { background-color: #ffffff; border: 1px solid #ddd; color: black; text-align: left; }
-        .typing-indicator { font-size: 16px; color: #888; font-style: italic; }
-        .chat-container { display: flex; width: 100%; }
-        .title-container { text-align: center; margin-bottom: 20px; }
-    </style>
-""", unsafe_allow_html=True)
+# Function to sign up users
+def signup(email, password):
+    try:
+        user = auth.create_user(email=email, password=password)
+        return user.uid
+    except Exception as e:
+        return None
 
-# App title
-st.markdown("<div class='title-container'><h1>Fifi</h1><p>Call me mommy!</p></div>", unsafe_allow_html=True)
+# Function to log in users
+def login(email, password):
+    try:
+        user = auth.get_user_by_email(email)
+        return user.uid
+    except Exception as e:
+        return None
+
+# User Authentication
+st.sidebar.header("User Login")
+email = st.sidebar.text_input("Email")
+password = st.sidebar.text_input("Password", type="password")
+login_btn = st.sidebar.button("Login")
+signup_btn = st.sidebar.button("Sign Up")
+
+user_id = None
+if login_btn:
+    user_id = login(email, password)
+    if user_id:
+        st.sidebar.success("Logged in successfully!")
+    else:
+        st.sidebar.error("Invalid credentials.")
+
+elif signup_btn:
+    user_id = signup(email, password)
+    if user_id:
+        st.sidebar.success("Account created successfully! Please log in.")
+    else:
+        st.sidebar.error("Sign-up failed. Try again.")
+
+if not user_id:
+    st.stop()
+
+# Fetch user data from Firestore
+def get_user_data(user_id):
+    doc_ref = db.collection("users").document(user_id)
+    doc = doc_ref.get()
+    if doc.exists:
+        return doc.to_dict()
+    else:
+        return {}
+
+user_data = get_user_data(user_id)
 
 # System prompt definition
 system_prompt = """You are Fifi, an expert AI assistant specifically designed to support new mothers through their parenting journey. 
@@ -40,9 +78,19 @@ If the user is pregnant and tells you how many weeks they are, you provide updat
 You act as a reminder for vaccinations (e.g., 'Your baby is 2 months old, it's time for XYZ vaccine') and allow users to set custom reminders (e.g., 'Next week I have a doctor's appointment' – you remind them when it's due).
 Additionally, every time you respond, you provide links to related topics for more information and ask if they would like additional information or suggested questions related to their inquiry."""
 
-# Initialize chat history
+# Fetch user-specific chat history
+def get_chat_history(user_id):
+    chat_ref = db.collection("chats").document(user_id)
+    chat = chat_ref.get()
+    return chat.to_dict().get("history", []) if chat.exists else [{"role": "system", "content": system_prompt}]
+
+# Save chat history
+def save_chat_history(user_id, history):
+    db.collection("chats").document(user_id).set({"history": history})
+
+# Load chat history
 if "conversation_history" not in st.session_state:
-    st.session_state.conversation_history = [{"role": "system", "content": system_prompt}]
+    st.session_state.conversation_history = get_chat_history(user_id)
 
 # Function to get AI response
 def get_mom_helper_response(conversation_history):
@@ -60,65 +108,26 @@ def get_mom_helper_response(conversation_history):
         return f"An error occurred: {str(e)}"
 
 # Display chat messages
-auto_scroll_placeholder = st.empty()
-
 for message in st.session_state.conversation_history[1:]:
-    if message["role"] == "user":
-        st.markdown(f"""
-        <div class="chat-container" style="justify-content: flex-end;">
-            <div class="chat-bubble user-message">
-                {message['content']}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown(f"""
-        <div class="chat-container" style="justify-content: flex-start;">
-            <div class="chat-bubble ai-message">
-                {message['content']}
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown(f"**{message['role'].capitalize()}:** {message['content']}")
 
 # User input
-typing_placeholder = st.empty()
 if user_input := st.chat_input("Type your message here..."):
     st.session_state.conversation_history.append({"role": "user", "content": user_input})
-    
-    # Display user message
-    st.markdown(f"""
-    <div class="chat-container" style="justify-content: flex-end;">
-        <div class="chat-bubble user-message">
-            {user_input}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Show typing indicator dynamically based on expected response time
-    typing_placeholder.markdown("""
-    <div class="chat-container" style="justify-content: flex-start;">
-        <div class="chat-bubble ai-message typing-indicator">
-            Typing...
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Dynamic delay based on input length
-    time.sleep(min(max(len(user_input) / 10, 1), 3))  # Min 1s, max 3s
-
-    # Get AI response
     response = get_mom_helper_response(st.session_state.conversation_history)
-    typing_placeholder.empty()
     st.session_state.conversation_history.append({"role": "assistant", "content": response})
-    
-    # Display AI response
-    st.markdown(f"""
-    <div class="chat-container" style="justify-content: flex-start;">
-        <div class="chat-bubble ai-message">
-            {response}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Auto-scroll to latest message
-    auto_scroll_placeholder.empty()
+    save_chat_history(user_id, st.session_state.conversation_history)
+    st.markdown(f"**Assistant:** {response}")
+
+# Automated reminders and follow-ups
+if user_data.get("pregnancy_weeks"):
+    st.info(f"Hey {user_data.get('name', 'Mom')}, you are now {user_data['pregnancy_weeks']} weeks pregnant! Your baby is developing rapidly.")
+
+if user_data.get("baby_age_months"):
+    st.info(f"Hey {user_data.get('name', 'Mom')}, your baby is now {user_data['baby_age_months']} months old! Remember to schedule vaccinations and check-ups.")
+
+# Allow users to set reminders
+reminder_text = st.text_input("Set a reminder (e.g., 'Doctor appointment next Monday')")
+if st.button("Save Reminder"):
+    db.collection("users").document(user_id).update({"reminders": firestore.ArrayUnion([reminder_text])})
+    st.success("Reminder saved!")
