@@ -8,87 +8,39 @@ from openai import OpenAI
 load_dotenv()
 
 # Initialize OpenAI client
-api_key = st.secrets["OPENAI_API_KEY"]
-client = OpenAI(api_key=api_key)
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # Inject custom CSS for better UI
 st.markdown("""
     <style>
-        /* Background */
-        .stApp {
-            background-color: #f7f7f7;
-        }
-        
-        /* Chat bubbles */
+        .stApp { background-color: #f7f7f7; }
         .chat-bubble {
             padding: 12px;
             border-radius: 16px;
             margin: 8px 0;
             max-width: 75%;
             font-size: 16px;
-        }
-
-        /* User messages (light blue) */
-        .user-message {
-            background-color: #4a90e2;
-            color: white;
-            margin-left: auto;
-            text-align: right;
-        }
-
-        /* AI messages (light grey) */
-        .ai-message {
-            background-color: #ffffff;
-            border: 1px solid #ddd;
-            color: black;
-            text-align: left;
-        }
-
-        /* Typing indicator */
-        .typing-indicator {
-            font-size: 16px;
-            color: #888;
-            font-style: italic;
-            animation: dots 1.5s infinite;
-        }
-
-        @keyframes dots {
-            0% {content: ".";}
-            33% {content: "..";}
-            66% {content: "...";}
-            100% {content: ".";}
-        }
-
-        /* Centering messages */
-        .chat-container {
-            display: flex;
-            width: 100%;
-        }
-
-        /* Prevent long messages from stretching too much */
-        .stMarkdown {
             word-wrap: break-word;
         }
-
-        /* Title styling */
-        .title-container {
-            text-align: center;
-            margin-bottom: 20px;
-        }
+        .user-message { background-color: #4a90e2; color: white; margin-left: auto; text-align: right; }
+        .ai-message { background-color: #ffffff; border: 1px solid #ddd; color: black; text-align: left; }
+        .typing-indicator { font-size: 16px; color: #888; font-style: italic; }
+        .chat-container { display: flex; width: 100%; }
+        .title-container { text-align: center; margin-bottom: 20px; }
     </style>
 """, unsafe_allow_html=True)
 
-# App title and introduction
+# App title
 st.markdown("<div class='title-container'><h1>Fifi</h1><p>Call me mommy!</p></div>", unsafe_allow_html=True)
 
 # System prompt definition
-system_prompt = """You are Fifi, an expert AI assistant specifically designed to support new mothers through their parenting journey. Your primary goal is to understand each mother's unique situation before providing tailored advice."""
+system_prompt = """You are Fifi, an expert AI assistant specifically designed to support new mothers through their parenting journey."""
 
-# Initialize chat history in session state
+# Initialize chat history
 if "conversation_history" not in st.session_state:
     st.session_state.conversation_history = [{"role": "system", "content": system_prompt}]
 
-# Function to get response from OpenAI
+# Function to get AI response
 def get_mom_helper_response(conversation_history):
     try:
         response = client.chat.completions.create(
@@ -103,10 +55,11 @@ def get_mom_helper_response(conversation_history):
     except Exception as e:
         return f"An error occurred: {str(e)}"
 
-# Display chat messages with refined formatting
-for message in st.session_state.conversation_history[1:]:  # Skip system message
+# Display chat messages
+auto_scroll_placeholder = st.empty()
+
+for message in st.session_state.conversation_history[1:]:
     if message["role"] == "user":
-        # User message on the right (blue)
         st.markdown(f"""
         <div class="chat-container" style="justify-content: flex-end;">
             <div class="chat-bubble user-message">
@@ -115,7 +68,6 @@ for message in st.session_state.conversation_history[1:]:  # Skip system message
         </div>
         """, unsafe_allow_html=True)
     else:
-        # AI response on the left (light grey)
         st.markdown(f"""
         <div class="chat-container" style="justify-content: flex-start;">
             <div class="chat-bubble ai-message">
@@ -124,12 +76,17 @@ for message in st.session_state.conversation_history[1:]:  # Skip system message
         </div>
         """, unsafe_allow_html=True)
 
-# User input for new message
+# Clear chat history button
+if st.button("Clear Chat"):
+    st.session_state.conversation_history = [{"role": "system", "content": system_prompt}]
+    st.experimental_rerun()
+
+# User input
+typing_placeholder = st.empty()
 if user_input := st.chat_input("Type your message here..."):
-    # Add user message to history
     st.session_state.conversation_history.append({"role": "user", "content": user_input})
     
-    # Display user message on the right (blue)
+    # Display user message
     st.markdown(f"""
     <div class="chat-container" style="justify-content: flex-end;">
         <div class="chat-bubble user-message">
@@ -137,31 +94,25 @@ if user_input := st.chat_input("Type your message here..."):
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-    # Show typing indicator
-    typing_placeholder = st.empty()
-    with typing_placeholder:
-        st.markdown("""
-        <div class="chat-container" style="justify-content: flex-start;">
-            <div class="chat-bubble ai-message typing-indicator">
-                Typing...
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
     
-    # Simulate a small delay to make it feel natural
-    time.sleep(1.5)
+    # Show typing indicator dynamically based on expected response time
+    typing_placeholder.markdown("""
+    <div class="chat-container" style="justify-content: flex-start;">
+        <div class="chat-bubble ai-message typing-indicator">
+            Typing...
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Dynamic delay based on input length
+    time.sleep(min(max(len(user_input) / 10, 1), 3))  # Min 1s, max 3s
 
-    # Get response from AI
+    # Get AI response
     response = get_mom_helper_response(st.session_state.conversation_history)
-
-    # Remove typing indicator
     typing_placeholder.empty()
-
-    # Add AI response to history
     st.session_state.conversation_history.append({"role": "assistant", "content": response})
-
-    # Display AI response on the left (light grey)
+    
+    # Display AI response
     st.markdown(f"""
     <div class="chat-container" style="justify-content: flex-start;">
         <div class="chat-bubble ai-message">
@@ -169,24 +120,6 @@ if user_input := st.chat_input("Type your message here..."):
         </div>
     </div>
     """, unsafe_allow_html=True)
-
-# Example questions for inspiration
-with st.expander("Need ideas? Click here for example questions."):
-    example_questions = {
-        "Baby Care": [
-            "How often should my 2-month-old feed?",
-            "How long does it take for the belly button to fall?"
-        ],
-        "Maternal Health": [
-            "I'm feeling overwhelmed, what can I do?",
-            "How can I take care of my C-section scar?"
-        ],
-        "Development": [
-            "How to combine breast milk with formula?",
-            "When should I start tummy time?"
-        ]
-    }
-    for category, questions in example_questions.items():
-        st.write(f"**{category}:**")
-        for q in questions:
-            st.write(f"- {q}")
+    
+    # Auto-scroll to latest message
+    auto_scroll_placeholder.empty()
