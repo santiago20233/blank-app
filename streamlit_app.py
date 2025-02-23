@@ -109,16 +109,17 @@ for message in st.session_state.chat_history[1:]:
 # ---------------- SUGGESTED QUESTIONS ---------------- #
 
 suggestions = [
-    "When should my baby start doing tummy time",
-    "How can I cure my C-section",
-    "When does the belly button fall",
-    "How long after the birth can I shower my baby",
+    "When should my baby start doing tummy time?",
+    "How can I cure my C-section?",
+    "When does the belly button fall?",
+    "How long after the birth can I shower my baby?",
     "How to avoid stretch marks during my pregnancy?"
 ]
 
 selected_question = st.selectbox("💡 Need ideas? Select a question:", [""] + suggestions)
 
-if selected_question:
+if selected_question and selected_question != "":
+    st.session_state.chat_history.append({"role": "user", "content": selected_question})
     st.session_state["user_input"] = selected_question
     st.rerun()
 
@@ -132,6 +133,9 @@ if "user_input" in st.session_state and st.session_state["user_input"]:
 
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
+
+    # Display user message immediately
+    st.markdown(f"<div class='chat-container'><div class='chat-bubble user-message'>{user_input}</div></div>", unsafe_allow_html=True)
 
     # Show typing indicator
     with st.spinner("Fifi is typing..."):
@@ -151,4 +155,5 @@ if user_input:
     if user_id:
         chat_ref.set({"history": st.session_state.chat_history})
 
+    # Display Fifi's response
     st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
