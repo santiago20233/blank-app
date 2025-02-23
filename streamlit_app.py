@@ -87,7 +87,7 @@ if "show_login" in st.session_state and st.session_state.show_login:
 # ---------------- CHAT SECTION ---------------- #
 
 # Display title & subtitle
-st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='title-container'><p class='title'>FIFI</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
 
 # Retrieve chat history for logged-in users
 user_id = st.session_state.user_id if st.session_state.user_logged_in else None
@@ -101,7 +101,7 @@ if "chat_history" not in st.session_state:
 if user_id and chat_ref.get().exists:
     st.session_state.chat_history = chat_ref.get().to_dict()["history"]
 
-# ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
+# ---------------- SUGGESTED QUESTIONS (DROPDOWN BUT CAN STILL TYPE) ---------------- #
 suggested_questions = {
     "👶 Baby Care": [
         "When does the belly button fall off?",
@@ -119,17 +119,15 @@ suggested_questions = {
     ]
 }
 
-selected_category = st.selectbox("💡 Suggested Questions", ["Select a category"] + list(suggested_questions.keys()))
-
-if selected_category != "Select a category":
-    selected_question = st.selectbox("Choose a question:", ["Select a question"] + suggested_questions[selected_category])
-    
-    if selected_question != "Select a question":
-        user_input = selected_question
+with st.expander("💡 Suggested Questions"):
+    for category, questions in suggested_questions.items():
+        st.markdown(f"**{category}**")
+        for question in questions:
+            st.markdown(f"- {question}")
 
 # ---------------- CHAT INPUT ---------------- #
 
-user_input = st.chat_input("Type your question here...") if "user_input" not in locals() else user_input
+user_input = st.chat_input("Type your question here...")
 
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
@@ -140,7 +138,7 @@ if user_input:
     # Show persistent typing indicator
     typing_placeholder = st.empty()
     with typing_placeholder:
-        st.markdown("<div class='typing-indicator'>typing...</div>", unsafe_allow_html=True)
+        st.markdown("<div class='typing-indicator'>Fifi is typing...</div>", unsafe_allow_html=True)
 
     # Get response
     response = client.chat.completions.create(
