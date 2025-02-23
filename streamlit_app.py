@@ -29,9 +29,9 @@ st.markdown("""
             margin-bottom: 10px;
         }
         .title {
-            font-size: 100px; /* Even Bigger */
+            font-size: 120px; /* Bigger title */
             font-weight: bold;
-            color: #FF69B4; /* Pink color */
+            color: #FF69B4; /* Pink */
             text-transform: lowercase;
         }
         .subtitle {
@@ -71,41 +71,6 @@ st.markdown("""
             font-style: italic;
             margin-top: 5px;
         }
-        .popup-container {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            width: 400px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-        }
-        .popup-button {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .popup-login {
-            background-color: black;
-            color: white;
-        }
-        .popup-signup {
-            background-color: white;
-            color: black;
-            border: 1px solid black;
-        }
-        .popup-guest {
-            color: #888;
-            text-decoration: underline;
-            cursor: pointer;
-        }
         .signin-button {
             position: absolute;
             top: 15px;
@@ -119,34 +84,14 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LOGIN POPUP (Centered & Functional) ---------------- #
+# ---------------- SIGN-IN MESSAGE (NO POP-UP) ---------------- #
 
 if "user_logged_in" not in st.session_state:
     st.session_state.user_logged_in = False
     st.session_state.user_id = None
 
-if "popup_shown" not in st.session_state:
-    st.session_state.popup_shown = False
-
-if not st.session_state.popup_shown:
-    st.markdown("""
-    <div class="popup-container">
-        <h3>✨ Log in to save chat history & get pregnancy follow-ups!</h3>
-        <p>By signing in, you'll get personalized reminders and pregnancy tracking.</p>
-        <button class="popup-button popup-login" id="login_btn">Log in / Sign up</button>
-        <br>
-        <button class="popup-button popup-signup" id="stay_logged_out">Stay logged out</button>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if st.button("Log in / Sign up"):
-        st.session_state.show_login = True
-        st.session_state.popup_shown = True
-        st.rerun()
-
-    if st.button("Stay logged out"):
-        st.session_state.popup_shown = True
-        st.rerun()
+# Always show sign-in message at the top
+st.markdown('<div class="signin-button">Want reminders & follow-ups? Sign in.</div>', unsafe_allow_html=True)
 
 # ---------------- LOGIN FORM ---------------- #
 if "show_login" in st.session_state and st.session_state.show_login:
@@ -185,10 +130,6 @@ if "show_login" in st.session_state and st.session_state.show_login:
 
 # ---------------- CHAT SECTION ---------------- #
 
-# Sign-in button (always visible for guests)
-if not st.session_state.user_logged_in:
-    st.markdown('<div class="signin-button">Sign in</div>', unsafe_allow_html=True)
-
 # Display title & subtitle
 st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>call me mommy 🤰</p></div>", unsafe_allow_html=True)
 
@@ -202,12 +143,31 @@ for message in chat_history[1:]:
     role_class = "user-message" if message["role"] == "user" else "ai-message"
     st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
 
+# Suggested questions dropdown (Your exact list)
+with st.expander("💡 Need ideas? Click a question to ask it."):
+    example_questions = [
+        "When should my baby start doing tummy time",
+        "How can I cure my C-section",
+        "When does the belly button fall",
+        "How long after the birth can I shower my baby",
+        "How to avoid stretch marks during my pregnancy?"
+    ]
+    for question in example_questions:
+        if st.button(question, key=question):
+            st.session_state["user_input"] = question
+            st.rerun()
+
 # Chat input
 user_input = st.chat_input("Type your question here...")
 
+if "user_input" in st.session_state and st.session_state["user_input"]:
+    user_input = st.session_state["user_input"]
+    del st.session_state["user_input"]
+
 if user_input:
     chat_history.append({"role": "user", "content": user_input})
-    
+
+    # Show typing indicator
     with st.spinner("Fifi is typing..."):
         time.sleep(1.5)
 
