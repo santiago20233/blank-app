@@ -5,8 +5,8 @@ from firebase_admin import credentials, firestore, auth
 from openai import OpenAI
 
 # Load Firebase credentials from Streamlit Secrets
-firebase_config = json.loads(st.secrets["firebase"])
-cred = credentials.Certificate(firebase_config)
+firebase_config = st.secrets["firebase"]
+cred = credentials.Certificate(dict(firebase_config))
 
 # Initialize Firebase (only if not already initialized)
 if not firebase_admin._apps:
