@@ -21,20 +21,21 @@ client = OpenAI(api_key=openai_api_key)
 
 # ---------------- UI CUSTOMIZATION ---------------- #
 
-# Custom CSS for better UI (makes it look more like ChatGPT)
+# Custom CSS for better UI (ChatGPT style pop-up, aesthetic chat)
 st.markdown("""
     <style>
         .title-container {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         .title {
-            font-size: 36px;
+            font-size: 50px;
             font-weight: bold;
             color: #FF69B4; /* Pink color */
+            text-transform: lowercase;
         }
         .subtitle {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: normal;
             color: #888;
         }
@@ -62,68 +63,95 @@ st.markdown("""
             color: black;
             text-align: left;
         }
+        .popup-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 400px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .popup-button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .popup-login {
+            background-color: black;
+            color: white;
+        }
+        .popup-signup {
+            background-color: white;
+            color: black;
+            border: 1px solid black;
+        }
+        .popup-guest {
+            color: #888;
+            text-decoration: underline;
+            cursor: pointer;
+        }
     </style>
 """, unsafe_allow_html=True)
 
 # ---------------- LOGIN POPUP ---------------- #
 
-# Show a modal popup for login/signup
 if "user_logged_in" not in st.session_state:
-    st.session_state.user_logged_in = False  # Default: user is not logged in
+    st.session_state.user_logged_in = False
     st.session_state.user_id = None
 
-# Show popup only on first visit
 if not st.session_state.user_logged_in:
-    with st.popover("Sign in for reminders & follow-ups!"):
-        st.write("By signing in, you get **personalized reminders, pregnancy tracking, and follow-ups**.")
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Log In / Sign Up"):
-                st.session_state.show_login = True  # Show login form
-        with col2:
-            if st.button("Continue as Guest"):
-                st.session_state.user_logged_in = True  # Allow access as a guest
+    st.markdown("""
+    <div class="popup-container">
+        <h3>Thanks for trying Fifi</h3>
+        <p>Log in or sign up to get **reminders, follow-ups, and pregnancy tracking**.</p>
+        <button class="popup-button popup-login" onclick="window.location.reload()">Log in</button>
+        <button class="popup-button popup-signup" onclick="window.location.reload()">Sign up</button>
+        <p class="popup-guest" onclick="window.location.reload()">Stay logged out</p>
+    </div>
+    """, unsafe_allow_html=True)
+    st.stop()
 
 # ---------------- LOGIN FORM ---------------- #
-if "show_login" in st.session_state and st.session_state.show_login:
-    st.sidebar.title("Sign Up / Login")
-    
-    email = st.sidebar.text_input("Email")
-    password = st.sidebar.text_input("Password", type="password")
+st.sidebar.title("Sign Up / Login")
+email = st.sidebar.text_input("Email")
+password = st.sidebar.text_input("Password", type="password")
 
-    login_btn = st.sidebar.button("Login")
-    signup_btn = st.sidebar.button("Sign Up")
+login_btn = st.sidebar.button("Login")
+signup_btn = st.sidebar.button("Sign Up")
 
-    if login_btn:
-        try:
-            user = auth.get_user_by_email(email)
-            st.session_state.user_id = user.uid
-            st.session_state.user_logged_in = True
-            st.sidebar.success("Logged in successfully!")
-            st.rerun()
-        except:
-            st.sidebar.error("Invalid credentials.")
+if login_btn:
+    try:
+        user = auth.get_user_by_email(email)
+        st.session_state.user_id = user.uid
+        st.session_state.user_logged_in = True
+        st.sidebar.success("Logged in successfully!")
+        st.rerun()
+    except:
+        st.sidebar.error("Invalid credentials.")
 
-    if signup_btn:
-        try:
-            user = auth.create_user(email=email, password=password)
-            st.session_state.user_id = user.uid
-            db.collection("users").document(user.uid).set({
-                "email": email,
-                "pregnancy_weeks": None,
-                "baby_age_months": None
-            })
-            st.sidebar.success("Account created! Please log in.")
-            st.rerun()
-        except:
-            st.sidebar.error("Sign-up failed. Try again.")
+if signup_btn:
+    try:
+        user = auth.create_user(email=email, password=password)
+        st.session_state.user_id = user.uid
+        db.collection("users").document(user.uid).set({
+            "email": email,
+            "pregnancy_weeks": None,
+            "baby_age_months": None
+        })
+        st.sidebar.success("Account created! Please log in.")
+        st.rerun()
+    except:
+        st.sidebar.error("Sign-up failed. Try again.")
 
 # ---------------- CHAT SECTION ---------------- #
 
-# Display the title & subtitle
-st.markdown("<div class='title-container'><p class='title'>Fifi</p><p class='subtitle'>Call me Mommy</p></div>", unsafe_allow_html=True)
+# Display title & subtitle
+st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>call me mommy 🤰</p></div>", unsafe_allow_html=True)
 
-# Check if the user is logged in
+# Check if user is logged in
 user_id = st.session_state.user_id if st.session_state.user_logged_in else None
 
 # Retrieve chat history (only if logged in)
@@ -134,6 +162,18 @@ chat_history = chat_ref.get().to_dict()["history"] if chat_ref and chat_ref.get(
 for message in chat_history[1:]:  # Skip system message
     role_class = "user-message" if message["role"] == "user" else "ai-message"
     st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
+
+# Suggested questions dropdown
+with st.expander("Need ideas? Click here for example questions."):
+    example_questions = [
+        "When should my baby start doing tummy time?",
+        "How can I cure my C-section?",
+        "When does the belly button fall?",
+        "How long after birth can I shower my baby?",
+        "How to avoid stretch marks during my pregnancy?"
+    ]
+    for question in example_questions:
+        st.markdown(f"- {question}")
 
 # Chat input
 user_input = st.chat_input("Type your question here...")
@@ -158,4 +198,3 @@ if user_input:
 
     # Display AI response
     st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
-
