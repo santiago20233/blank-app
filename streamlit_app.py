@@ -130,10 +130,12 @@ if user_input:
     # Display user message immediately
     st.markdown(f"<div class='chat-container'><div class='chat-bubble user-message'>{user_input}</div></div>", unsafe_allow_html=True)
 
-    # Show typing indicator
-    with st.spinner("Fifi is typing..."):
-        time.sleep(1.5)
+    # Show persistent typing indicator
+    typing_placeholder = st.empty()
+    with typing_placeholder:
+        st.markdown("<div class='typing-indicator'>Typing...</div>", unsafe_allow_html=True)
 
+    # Get response
     response = client.chat.completions.create(
         model="gpt-4",
         messages=st.session_state.chat_history,
@@ -142,6 +144,10 @@ if user_input:
     )
     assistant_reply = response.choices[0].message.content
 
+    # Remove typing indicator
+    typing_placeholder.empty()
+
+    # Add response to chat history
     st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
 
     # Save chat history only if user is logged in
