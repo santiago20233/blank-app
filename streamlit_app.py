@@ -1,134 +1,120 @@
-
+import json
 import streamlit as st
-import os
-import time
 import firebase_admin
-from firebase_admin import credentials, auth, firestore
-from dotenv import load_dotenv
+from firebase_admin import credentials, firestore, auth
 from openai import OpenAI
 
-# Load environment variables
-load_dotenv()
+# Load Firebase credentials from Streamlit Secrets
+firebase_config = json.loads(st.secrets["firebase"])
+cred = credentials.Certificate(firebase_config)
 
-# Initialize Firebase
+# Initialize Firebase (only if not already initialized)
 if not firebase_admin._apps:
-    cred = credentials.Certificate("firebase_credentials.json")  # Ensure you add your Firebase credentials JSON
     firebase_admin.initialize_app(cred)
 
+# Firestore Database
 db = firestore.client()
 
-# Initialize OpenAI client
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
-# Function to sign up users
-def signup(email, password):
-    try:
-        user = auth.create_user(email=email, password=password)
-        return user.uid
-    except Exception as e:
-        return None
-
-# Function to log in users
-def login(email, password):
-    try:
-        user = auth.get_user_by_email(email)
-        return user.uid
-    except Exception as e:
-        return None
+# OpenAI API Key (Add it to Streamlit Secrets as well)
+openai_api_key = st.secrets["OPENAI_API_KEY"]
+client = OpenAI(api_key=openai_api_key)
 
 # User Authentication
-st.sidebar.header("User Login")
+st.sidebar.title("Sign Up / Login")
+
 email = st.sidebar.text_input("Email")
 password = st.sidebar.text_input("Password", type="password")
+
 login_btn = st.sidebar.button("Login")
 signup_btn = st.sidebar.button("Sign Up")
 
 user_id = None
 if login_btn:
-    user_id = login(email, password)
-    if user_id:
+    try:
+        user = auth.get_user_by_email(email)
+        user_id = user.uid
         st.sidebar.success("Logged in successfully!")
-    else:
+    except:
         st.sidebar.error("Invalid credentials.")
 
-elif signup_btn:
-    user_id = signup(email, password)
-    if user_id:
-        st.sidebar.success("Account created successfully! Please log in.")
-    else:
+if signup_btn:
+    try:
+        user = auth.create_user(email=email, password=password)
+        user_id = user.uid
+        db.collection("users").document(user_id).set({
+            "email": email,
+            "pregnancy_weeks": None,
+            "baby_age_months": None
+        })
+        st.sidebar.success("Account created! Please log in.")
+    except:
         st.sidebar.error("Sign-up failed. Try again.")
 
 if not user_id:
     st.stop()
 
-# Fetch user data from Firestore
-def get_user_data(user_id):
-    doc_ref = db.collection("users").document(user_id)
-    doc = doc_ref.get()
-    if doc.exists:
-        return doc.to_dict()
-    else:
-        return {}
+# Load User Data
+user_doc = db.collection("users").document(user_id).get()
+user_data = user_doc.to_dict()
 
-user_data = get_user_data(user_id)
+# Ask Pregnancy or Baby Age if First Time
+if user_data["pregnancy_weeks"] is None and user_data["baby_age_months"] is None:
+    st.sidebar.subheader("Tell us about your journey")
+    pregnancy_weeks = st.sidebar.number_input("How many weeks pregnant are you?", min_value=0, max_value=40, step=1)
+    baby_age_months = st.sidebar.number_input("How old is your baby (in months)?", min_value=0, max_value=24, step=1)
+    if st.sidebar.button("Save Info"):
+        db.collection("users").document(user_id).update({
+            "pregnancy_weeks": pregnancy_weeks if pregnancy_weeks > 0 else None,
+            "baby_age_months": baby_age_months if baby_age_months > 0 else None
+        })
+        st.sidebar.success("Information saved! Refresh to see updates.")
 
-# System prompt definition
-system_prompt = """You are Fifi, an expert AI assistant specifically designed to support new mothers through their parenting journey. 
-You remember the user's child's name and refer to them personally. If a mother asks for help, such as her child having a fever, you not only provide immediate advice but also follow up later to check on the child and offer further assistance. 
-If the user is pregnant and tells you how many weeks they are, you provide updates like 'Your baby is now the size of a melon, and their lungs are starting to develop,' or 'It’s normal to start feeling nausea or back pain at this stage.' You may also suggest relevant products that help with their condition.
-You act as a reminder for vaccinations (e.g., 'Your baby is 2 months old, it's time for XYZ vaccine') and allow users to set custom reminders (e.g., 'Next week I have a doctor's appointment' – you remind them when it's due).
-Additionally, every time you respond, you provide links to related topics for more information and ask if they would like additional information or suggested questions related to their inquiry."""
+# Chat History
+chat_ref = db.collection("chats").document(user_id)
+chat_doc = chat_ref.get()
 
-# Fetch user-specific chat history
-def get_chat_history(user_id):
-    chat_ref = db.collection("chats").document(user_id)
-    chat = chat_ref.get()
-    return chat.to_dict().get("history", []) if chat.exists else [{"role": "system", "content": system_prompt}]
+if chat_doc.exists:
+    chat_history = chat_doc.to_dict()["history"]
+else:
+    chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant."}]
 
-# Save chat history
-def save_chat_history(user_id, history):
-    db.collection("chats").document(user_id).set({"history": history})
+# Display Pregnancy Follow-Ups
+if user_data["pregnancy_weeks"]:
+    st.info(f"Hey! You are now {user_data['pregnancy_weeks']} weeks pregnant! Your baby is growing rapidly.")
 
-# Load chat history
-if "conversation_history" not in st.session_state:
-    st.session_state.conversation_history = get_chat_history(user_id)
+if user_data["baby_age_months"]:
+    st.info(f"Hey! Your baby is {user_data['baby_age_months']} months old. Make sure to check on vaccinations.")
 
-# Function to get AI response
-def get_mom_helper_response(conversation_history):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4",
-            messages=conversation_history,
-            temperature=0.4,
-            max_tokens=600,
-            presence_penalty=0.6,
-            frequency_penalty=0.3
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"An error occurred: {str(e)}"
+# Display Chat
+st.title("Fifi - Your AI Mommy Assistant")
 
-# Display chat messages
-for message in st.session_state.conversation_history[1:]:
+for message in chat_history[1:]:  # Skip system message
     st.markdown(f"**{message['role'].capitalize()}:** {message['content']}")
 
-# User input
-if user_input := st.chat_input("Type your message here..."):
-    st.session_state.conversation_history.append({"role": "user", "content": user_input})
-    response = get_mom_helper_response(st.session_state.conversation_history)
-    st.session_state.conversation_history.append({"role": "assistant", "content": response})
-    save_chat_history(user_id, st.session_state.conversation_history)
-    st.markdown(f"**Assistant:** {response}")
+user_input = st.chat_input("Type your question here...")
 
-# Automated reminders and follow-ups
-if user_data.get("pregnancy_weeks"):
-    st.info(f"Hey {user_data.get('name', 'Mom')}, you are now {user_data['pregnancy_weeks']} weeks pregnant! Your baby is developing rapidly.")
+if user_input:
+    chat_history.append({"role": "user", "content": user_input})
 
-if user_data.get("baby_age_months"):
-    st.info(f"Hey {user_data.get('name', 'Mom')}, your baby is now {user_data['baby_age_months']} months old! Remember to schedule vaccinations and check-ups.")
+    # Get AI Response
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=chat_history,
+        temperature=0.4,
+        max_tokens=600
+    )
+    assistant_reply = response.choices[0].message.content
 
-# Allow users to set reminders
-reminder_text = st.text_input("Set a reminder (e.g., 'Doctor appointment next Monday')")
-if st.button("Save Reminder"):
-    db.collection("users").document(user_id).update({"reminders": firestore.ArrayUnion([reminder_text])})
-    st.success("Reminder saved!")
+    chat_history.append({"role": "assistant", "content": assistant_reply})
+    chat_ref.set({"history": chat_history})
+
+    st.markdown(f"**Assistant:** {assistant_reply}")
+
+# Set Reminders
+st.sidebar.subheader("Set a Reminder")
+reminder_text = st.sidebar.text_input("Reminder (e.g., 'Doctor appointment next Monday')")
+if st.sidebar.button("Save Reminder"):
+    db.collection("users").document(user_id).update({
+        "reminders": firestore.ArrayUnion([reminder_text])
+    })
+    st.sidebar.success("Reminder saved!")
