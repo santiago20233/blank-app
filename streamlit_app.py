@@ -3,6 +3,7 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 from openai import OpenAI
+import time
 
 # Load Firebase credentials
 firebase_config = st.secrets["firebase"]
@@ -21,7 +22,7 @@ client = OpenAI(api_key=openai_api_key)
 
 # ---------------- UI CUSTOMIZATION ---------------- #
 
-# Custom CSS for ChatGPT-like UI
+# Custom CSS for WhatsApp-style chat
 st.markdown("""
     <style>
         .title-container {
@@ -29,9 +30,9 @@ st.markdown("""
             margin-bottom: 10px;
         }
         .title {
-            font-size: 90px; /* Even Bigger */
+            font-size: 90px; /* Bigger title */
             font-weight: bold;
-            color: #FF69B4; /* Pink color */
+            color: #FF69B4; /* Pink */
             text-transform: lowercase;
         }
         .subtitle {
@@ -43,25 +44,33 @@ st.markdown("""
             display: flex;
             flex-direction: column;
             align-items: center;
+            max-width: 600px;
+            margin: auto;
         }
         .chat-bubble {
             padding: 12px;
             border-radius: 16px;
             margin: 8px 0;
-            max-width: 80%;
             font-size: 16px;
+            width: fit-content;
+            max-width: 80%;
         }
         .user-message {
             background-color: #4a90e2;
             color: white;
-            margin-left: auto;
-            text-align: right;
+            align-self: flex-end;
         }
         .ai-message {
             background-color: #f1f1f1;
             border: 1px solid #ddd;
             color: black;
-            text-align: left;
+            align-self: flex-start;
+        }
+        .typing-indicator {
+            font-size: 14px;
+            color: #888;
+            font-style: italic;
+            margin-top: 5px;
         }
         .popup-container {
             position: fixed;
@@ -101,7 +110,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LOGIN POPUP (Centered) ---------------- #
+# ---------------- LOGIN POPUP (Centered & Functional) ---------------- #
 
 if "user_logged_in" not in st.session_state:
     st.session_state.user_logged_in = False
@@ -115,16 +124,22 @@ if not st.session_state.popup_shown:
     <div class="popup-container">
         <h3>✨ Log in to save chat history & get pregnancy follow-ups!</h3>
         <p>By signing in, you'll get personalized reminders and pregnancy tracking.</p>
-        <button class="popup-button popup-login" onclick="window.location.reload()">Log in / Sign up</button>
+        <button class="popup-button popup-login" id="login_btn">Log in / Sign up</button>
         <br>
-        <p class="popup-guest" onclick="window.location.reload()">Stay logged out</p>
+        <button class="popup-button popup-signup" id="stay_logged_out">Stay logged out</button>
     </div>
     """, unsafe_allow_html=True)
-    if st.button("Stay logged out", key="stay_logged_out"):
-        st.session_state.popup_shown = True  # Hide pop-up
+
+    if st.button("Log in / Sign up"):
+        st.session_state.show_login = True
+        st.session_state.popup_shown = True
         st.rerun()
 
-# ---------------- LOGIN FORM (Always Accessible) ---------------- #
+    if st.button("Stay logged out"):
+        st.session_state.popup_shown = True
+        st.rerun()
+
+# ---------------- LOGIN FORM ---------------- #
 if "show_login" in st.session_state and st.session_state.show_login:
     with st.sidebar:
         st.title("Sign Up / Login")
@@ -172,11 +187,11 @@ chat_ref = db.collection("chats").document(user_id) if user_id else None
 chat_history = chat_ref.get().to_dict()["history"] if chat_ref and chat_ref.get().exists else [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant."}]
 
 # Display chat
-for message in chat_history[1:]:  # Skip system message
+for message in chat_history[1:]:  
     role_class = "user-message" if message["role"] == "user" else "ai-message"
     st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
 
-# Suggested questions dropdown with clickable options
+# Suggested questions dropdown (Clickable)
 with st.expander("💡 Need ideas? Click a question to ask it."):
     example_questions = [
         "When should my baby start doing tummy time?",
@@ -195,10 +210,14 @@ user_input = st.chat_input("Type your question here...")
 
 if "user_input" in st.session_state and st.session_state["user_input"]:
     user_input = st.session_state["user_input"]
-    del st.session_state["user_input"]  # Clear the stored question after use
+    del st.session_state["user_input"]
 
 if user_input:
     chat_history.append({"role": "user", "content": user_input})
+
+    # Show typing indicator
+    with st.spinner("Fifi is typing..."):
+        time.sleep(1.5)
 
     # Get AI Response
     response = client.chat.completions.create(
@@ -211,9 +230,7 @@ if user_input:
 
     chat_history.append({"role": "assistant", "content": assistant_reply})
 
-    # Save chat history only if logged in
     if user_id:
         chat_ref.set({"history": chat_history})
 
-    # Display AI response
     st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
