@@ -234,3 +234,4 @@ if user_input:
         chat_ref.set({"history": chat_history})
 
     st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
+
