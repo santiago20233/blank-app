@@ -25,8 +25,8 @@ client = OpenAI(api_key=openai_api_key)
 st.markdown("""
     <style>
         .title-container { text-align: center; margin-bottom: 10px; }
-        .title { font-size: 80px; font-weight: bold; color: #ff69b4; text-transform: uppercase; } /* BIG & PINK */
-        .subtitle { font-size: 25px; font-weight: normal; color: #666; }
+        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; } /* BIG & PINK */
+        .subtitle { font-size: 18px; font-weight: normal; color: #666; }
         .chat-container { display: flex; flex-direction: column; align-items: center; max-width: 600px; margin: auto; }
         .chat-bubble { padding: 12px; border-radius: 16px; margin: 8px 0; font-size: 16px; width: fit-content; max-width: 80%; }
         .user-message { background-color: #4a90e2; color: white; align-self: flex-end; }
@@ -87,7 +87,7 @@ if "show_login" in st.session_state and st.session_state.show_login:
 # ---------------- CHAT SECTION ---------------- #
 
 # Display title & subtitle
-st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='title-container'><p class='title'>FIFI</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
 
 # Retrieve chat history for logged-in users
 user_id = st.session_state.user_id if st.session_state.user_logged_in else None
@@ -101,24 +101,24 @@ if "chat_history" not in st.session_state:
 if user_id and chat_ref.get().exists:
     st.session_state.chat_history = chat_ref.get().to_dict()["history"]
 
+# ---------------- SUGGESTED QUESTIONS (ONLY AT START) ---------------- #
+if len(st.session_state.chat_history) == 1:
+    suggestions = [
+        "When should my baby start doing tummy time?",
+        "How can I cure my C-section?",
+        "When does the belly button fall?",
+        "How long after the birth can I shower my baby?",
+        "How to avoid stretch marks during my pregnancy?"
+    ]
+
+    with st.expander("💡 Suggested Questions"):
+        for question in suggestions:
+            st.markdown(f"- {question}")
+
 # Display chat history (Even if logged out)
 for message in st.session_state.chat_history[1:]:  
     role_class = "user-message" if message["role"] == "user" else "ai-message"
     st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
-
-# ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
-
-suggestions = [
-    "When should my baby start doing tummy time?",
-    "How can I cure my C-section?",
-    "When does the belly button fall?",
-    "How long after the birth can I shower my baby?",
-    "How to avoid stretch marks during my pregnancy?"
-]
-
-with st.expander("💡 Suggested Questions"):
-    for question in suggestions:
-        st.markdown(f"- {question}")
 
 # ---------------- CHAT INPUT ---------------- #
 
@@ -133,7 +133,7 @@ if user_input:
     # Show persistent typing indicator
     typing_placeholder = st.empty()
     with typing_placeholder:
-        st.markdown("<div class='typing-indicator'>Typing...</div>", unsafe_allow_html=True)
+        st.markdown("<div class='typing-indicator'>Fifi is typing...</div>", unsafe_allow_html=True)
 
     # Get response
     response = client.chat.completions.create(
@@ -143,6 +143,10 @@ if user_input:
         max_tokens=600
     )
     assistant_reply = response.choices[0].message.content
+
+    # Generate related article links
+    related_links = f"\n\n**Here are some articles related to your question:**\n🔗 [Article 1](https://example.com/article1)\n🔗 [Article 2](https://example.com/article2)\n🔗 [Article 3](https://example.com/article3)"
+    assistant_reply += related_links
 
     # Remove typing indicator
     typing_placeholder.empty()
