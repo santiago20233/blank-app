@@ -25,8 +25,8 @@ client = OpenAI(api_key=openai_api_key)
 st.markdown("""
     <style>
         .title-container { text-align: center; margin-bottom: 10px; }
-        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; } /* BIG & PINK */
-        .subtitle { font-size: 18px; font-weight: normal; color: #666; }
+        .title { font-size: 80px; font-weight: bold; color: #ff69b4; text-transform: uppercase; } /* BIG & PINK */
+        .subtitle { font-size: 25px; font-weight: normal; color: #666; }
         .chat-container { display: flex; flex-direction: column; align-items: center; max-width: 600px; margin: auto; }
         .chat-bubble { padding: 12px; border-radius: 16px; margin: 8px 0; font-size: 16px; width: fit-content; max-width: 80%; }
         .user-message { background-color: #4a90e2; color: white; align-self: flex-end; }
@@ -87,7 +87,7 @@ if "show_login" in st.session_state and st.session_state.show_login:
 # ---------------- CHAT SECTION ---------------- #
 
 # Display title & subtitle
-st.markdown("<div class='title-container'><p class='title'>FIFI</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
 
 # Retrieve chat history for logged-in users
 user_id = st.session_state.user_id if st.session_state.user_logged_in else None
@@ -116,7 +116,9 @@ suggestions = [
     "How to avoid stretch marks during my pregnancy?"
 ]
 
-st.selectbox("💡 Suggested Questions (View Only)", ["Select a question"] + suggestions, index=0, disabled=True)
+with st.expander("💡 Suggested Questions"):
+    for question in suggestions:
+        st.markdown(f"- {question}")
 
 # ---------------- CHAT INPUT ---------------- #
 
