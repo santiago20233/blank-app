@@ -143,15 +143,16 @@ if user_input:
         max_tokens=600
     )
 
-    # Adjust Fifi's tone to be supportive but natural
-    assistant_reply = f"{response.choices[0].message.content}\n\nYou're doing great! Motherhood is a journey, and it's okay to have questions. 💜"
+    assistant_reply = f"{response.choices[0].message.content}"
 
     # Add medical disclaimer if necessary
     if any(word in user_input.lower() for word in ["fever", "sick", "infection", "pain", "rash", "vomiting", "diarrhea"]):
         assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
 
-    # Add related links
-    assistant_reply += "\n\n**Related articles for further reading:**\n🔗 [Baby Belly Button Care](https://example.com/belly-button-care)\n🔗 [C-Section Recovery Guide](https://example.com/c-section-recovery)"
+    # Add related links with descriptions
+    assistant_reply += "\n\n**Related articles for further reading:**"
+    assistant_reply += "\n- **[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."
+    assistant_reply += "\n- **[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."
 
     # Remove typing indicator
     typing_placeholder.empty()
