@@ -120,16 +120,11 @@ selected_question = st.selectbox("💡 Need ideas? Select a question:", [""] + s
 
 if selected_question and selected_question != "":
     st.session_state.chat_history.append({"role": "user", "content": selected_question})
-    st.session_state["user_input"] = selected_question
-    st.rerun()
+    st.rerun()  # Force chat to display the selected question
 
 # ---------------- CHAT INPUT ---------------- #
 
 user_input = st.chat_input("Type your question here...")
-
-if "user_input" in st.session_state and st.session_state["user_input"]:
-    user_input = st.session_state["user_input"]
-    del st.session_state["user_input"]
 
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
