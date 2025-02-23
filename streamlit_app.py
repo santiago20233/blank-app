@@ -3,6 +3,7 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 from openai import OpenAI
+import time
 
 # Load Firebase credentials
 firebase_config = st.secrets["firebase"]
@@ -21,7 +22,7 @@ client = OpenAI(api_key=openai_api_key)
 
 # ---------------- UI CUSTOMIZATION ---------------- #
 
-# Custom CSS for better UI (ChatGPT style pop-up, aesthetic chat)
+# Custom CSS for ChatGPT-like UI
 st.markdown("""
     <style>
         .title-container {
@@ -29,7 +30,7 @@ st.markdown("""
             margin-bottom: 10px;
         }
         .title {
-            font-size: 50px;
+            font-size: 60px;
             font-weight: bold;
             color: #FF69B4; /* Pink color */
             text-transform: lowercase;
@@ -63,88 +64,64 @@ st.markdown("""
             color: black;
             text-align: left;
         }
-        .popup-container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-            width: 400px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-        }
-        .popup-button {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .popup-login {
-            background-color: black;
-            color: white;
-        }
-        .popup-signup {
-            background-color: white;
-            color: black;
-            border: 1px solid black;
-        }
-        .popup-guest {
-            color: #888;
-            text-decoration: underline;
-            cursor: pointer;
-        }
     </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LOGIN POPUP ---------------- #
+# ---------------- LOGIN POPUP (TOAST NOTIFICATION) ---------------- #
 
 if "user_logged_in" not in st.session_state:
     st.session_state.user_logged_in = False
     st.session_state.user_id = None
 
-if not st.session_state.user_logged_in:
-    st.markdown("""
-    <div class="popup-container">
-        <h3>Thanks for trying Fifi</h3>
-        <p>Log in or sign up to get **reminders, follow-ups, and pregnancy tracking**.</p>
-        <button class="popup-button popup-login" onclick="window.location.reload()">Log in</button>
-        <button class="popup-button popup-signup" onclick="window.location.reload()">Sign up</button>
-        <p class="popup-guest" onclick="window.location.reload()">Stay logged out</p>
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
+if "popup_shown" not in st.session_state:
+    st.session_state.popup_shown = False
+
+# Show pop-up notification at the top of the screen
+if not st.session_state.popup_shown:
+    with st.toast("✨ Log in to save chat history & get pregnancy follow-ups!"):
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("Log in / Sign up"):
+                st.session_state.show_login = True  # Show login form
+        with col2:
+            if st.button("Stay logged out"):
+                st.session_state.user_logged_in = False
+                st.session_state.popup_shown = True  # Dismiss pop-up
+                st.rerun()
 
 # ---------------- LOGIN FORM ---------------- #
-st.sidebar.title("Sign Up / Login")
-email = st.sidebar.text_input("Email")
-password = st.sidebar.text_input("Password", type="password")
+if "show_login" in st.session_state and st.session_state.show_login:
+    st.sidebar.title("Sign Up / Login")
 
-login_btn = st.sidebar.button("Login")
-signup_btn = st.sidebar.button("Sign Up")
+    email = st.sidebar.text_input("Email")
+    password = st.sidebar.text_input("Password", type="password")
 
-if login_btn:
-    try:
-        user = auth.get_user_by_email(email)
-        st.session_state.user_id = user.uid
-        st.session_state.user_logged_in = True
-        st.sidebar.success("Logged in successfully!")
-        st.rerun()
-    except:
-        st.sidebar.error("Invalid credentials.")
+    login_btn = st.sidebar.button("Login")
+    signup_btn = st.sidebar.button("Sign Up")
 
-if signup_btn:
-    try:
-        user = auth.create_user(email=email, password=password)
-        st.session_state.user_id = user.uid
-        db.collection("users").document(user.uid).set({
-            "email": email,
-            "pregnancy_weeks": None,
-            "baby_age_months": None
-        })
-        st.sidebar.success("Account created! Please log in.")
-        st.rerun()
-    except:
-        st.sidebar.error("Sign-up failed. Try again.")
+    if login_btn:
+        try:
+            user = auth.get_user_by_email(email)
+            st.session_state.user_id = user.uid
+            st.session_state.user_logged_in = True
+            st.sidebar.success("Logged in successfully!")
+            st.rerun()
+        except:
+            st.sidebar.error("Invalid credentials.")
+
+    if signup_btn:
+        try:
+            user = auth.create_user(email=email, password=password)
+            st.session_state.user_id = user.uid
+            db.collection("users").document(user.uid).set({
+                "email": email,
+                "pregnancy_weeks": None,
+                "baby_age_months": None
+            })
+            st.sidebar.success("Account created! Please log in.")
+            st.rerun()
+        except:
+            st.sidebar.error("Sign-up failed. Try again.")
 
 # ---------------- CHAT SECTION ---------------- #
 
@@ -164,7 +141,7 @@ for message in chat_history[1:]:  # Skip system message
     st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
 
 # Suggested questions dropdown
-with st.expander("Need ideas? Click here for example questions."):
+with st.expander("💡 Need ideas? Click here for example questions."):
     example_questions = [
         "When should my baby start doing tummy time?",
         "How can I cure my C-section?",
