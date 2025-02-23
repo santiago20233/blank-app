@@ -158,6 +158,11 @@ if user_input:
     if any(word in user_input.lower() for word in ["fever", "sick", "infection", "pain", "rash", "vomiting", "diarrhea"]):
         assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
 
+    # Add related links with descriptions
+    assistant_reply += "\n\n**📚 Related articles for further reading:**"
+    assistant_reply += "\n- **[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."
+    assistant_reply += "\n- **[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."
+
     # Remove typing indicator
     typing_placeholder.empty()
 
