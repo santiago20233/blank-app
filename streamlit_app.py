@@ -30,13 +30,13 @@ st.markdown("""
             margin-bottom: 10px;
         }
         .title {
-            font-size: 60px;
+            font-size: 80px; /* Increased size */
             font-weight: bold;
             color: #FF69B4; /* Pink color */
             text-transform: lowercase;
         }
         .subtitle {
-            font-size: 20px;
+            font-size: 25px;
             font-weight: normal;
             color: #888;
         }
@@ -64,10 +64,40 @@ st.markdown("""
             color: black;
             text-align: left;
         }
+        .popup-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 400px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .popup-button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .popup-login {
+            background-color: black;
+            color: white;
+        }
+        .popup-signup {
+            background-color: white;
+            color: black;
+            border: 1px solid black;
+        }
+        .popup-guest {
+            color: #888;
+            text-decoration: underline;
+            cursor: pointer;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LOGIN POPUP (TOAST NOTIFICATION) ---------------- #
+# ---------------- LOGIN POPUP ---------------- #
 
 if "user_logged_in" not in st.session_state:
     st.session_state.user_logged_in = False
@@ -78,55 +108,57 @@ if "popup_shown" not in st.session_state:
 
 # Show pop-up notification at the top of the screen
 if not st.session_state.popup_shown:
-    with st.toast("✨ Log in to save chat history & get pregnancy follow-ups!"):
+    with st.popover("✨ Log in to save chat history & get pregnancy follow-ups!"):
+        st.write("By signing in, you'll get personalized reminders and pregnancy tracking.")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("Log in / Sign up"):
-                st.session_state.show_login = True  # Show login form
+                st.session_state.show_login = True
         with col2:
             if st.button("Stay logged out"):
                 st.session_state.user_logged_in = False
                 st.session_state.popup_shown = True  # Dismiss pop-up
                 st.rerun()
 
-# ---------------- LOGIN FORM ---------------- #
+# ---------------- LOGIN FORM (Always Accessible) ---------------- #
 if "show_login" in st.session_state and st.session_state.show_login:
-    st.sidebar.title("Sign Up / Login")
+    with st.sidebar:
+        st.title("Sign Up / Login")
 
-    email = st.sidebar.text_input("Email")
-    password = st.sidebar.text_input("Password", type="password")
+        email = st.text_input("Email")
+        password = st.text_input("Password", type="password")
 
-    login_btn = st.sidebar.button("Login")
-    signup_btn = st.sidebar.button("Sign Up")
+        login_btn = st.button("Login")
+        signup_btn = st.button("Sign Up")
 
-    if login_btn:
-        try:
-            user = auth.get_user_by_email(email)
-            st.session_state.user_id = user.uid
-            st.session_state.user_logged_in = True
-            st.sidebar.success("Logged in successfully!")
-            st.rerun()
-        except:
-            st.sidebar.error("Invalid credentials.")
+        if login_btn:
+            try:
+                user = auth.get_user_by_email(email)
+                st.session_state.user_id = user.uid
+                st.session_state.user_logged_in = True
+                st.success("Logged in successfully!")
+                st.rerun()
+            except:
+                st.error("Invalid credentials.")
 
-    if signup_btn:
-        try:
-            user = auth.create_user(email=email, password=password)
-            st.session_state.user_id = user.uid
-            db.collection("users").document(user.uid).set({
-                "email": email,
-                "pregnancy_weeks": None,
-                "baby_age_months": None
-            })
-            st.sidebar.success("Account created! Please log in.")
-            st.rerun()
-        except:
-            st.sidebar.error("Sign-up failed. Try again.")
+        if signup_btn:
+            try:
+                user = auth.create_user(email=email, password=password)
+                st.session_state.user_id = user.uid
+                db.collection("users").document(user.uid).set({
+                    "email": email,
+                    "pregnancy_weeks": None,
+                    "baby_age_months": None
+                })
+                st.success("Account created! Please log in.")
+                st.rerun()
+            except:
+                st.error("Sign-up failed. Try again.")
 
 # ---------------- CHAT SECTION ---------------- #
 
 # Display title & subtitle
-st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>call me mommy 🤰</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
 
 # Check if user is logged in
 user_id = st.session_state.user_id if st.session_state.user_logged_in else None
@@ -146,7 +178,7 @@ with st.expander("💡 Need ideas? Click here for example questions."):
         "When should my baby start doing tummy time?",
         "How can I cure my C-section?",
         "When does the belly button fall?",
-        "How long after birth can I shower my baby?",
+        "How long after birth can I bath my baby?",
         "How to avoid stretch marks during my pregnancy?"
     ]
     for question in example_questions:
