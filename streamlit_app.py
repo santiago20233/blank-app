@@ -3,7 +3,6 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
 from openai import OpenAI
-import time
 
 # Load Firebase credentials
 firebase_config = st.secrets["firebase"]
@@ -30,7 +29,7 @@ st.markdown("""
             margin-bottom: 10px;
         }
         .title {
-            font-size: 80px; /* Increased size */
+            font-size: 90px; /* Even Bigger */
             font-weight: bold;
             color: #FF69B4; /* Pink color */
             text-transform: lowercase;
@@ -65,12 +64,17 @@ st.markdown("""
             text-align: left;
         }
         .popup-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background-color: white;
             padding: 20px;
             border-radius: 10px;
             text-align: center;
             width: 400px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
         }
         .popup-button {
             width: 100%;
@@ -97,7 +101,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ---------------- LOGIN POPUP ---------------- #
+# ---------------- LOGIN POPUP (Centered) ---------------- #
 
 if "user_logged_in" not in st.session_state:
     st.session_state.user_logged_in = False
@@ -106,19 +110,19 @@ if "user_logged_in" not in st.session_state:
 if "popup_shown" not in st.session_state:
     st.session_state.popup_shown = False
 
-# Show pop-up notification at the top of the screen
 if not st.session_state.popup_shown:
-    with st.popover("✨ Log in to save chat history & get pregnancy follow-ups!"):
-        st.write("By signing in, you'll get personalized reminders and pregnancy tracking.")
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Log in / Sign up"):
-                st.session_state.show_login = True
-        with col2:
-            if st.button("Stay logged out"):
-                st.session_state.user_logged_in = False
-                st.session_state.popup_shown = True  # Dismiss pop-up
-                st.rerun()
+    st.markdown("""
+    <div class="popup-container">
+        <h3>✨ Log in to save chat history & get pregnancy follow-ups!</h3>
+        <p>By signing in, you'll get personalized reminders and pregnancy tracking.</p>
+        <button class="popup-button popup-login" onclick="window.location.reload()">Log in / Sign up</button>
+        <br>
+        <p class="popup-guest" onclick="window.location.reload()">Stay logged out</p>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("Stay logged out", key="stay_logged_out"):
+        st.session_state.popup_shown = True  # Hide pop-up
+        st.rerun()
 
 # ---------------- LOGIN FORM (Always Accessible) ---------------- #
 if "show_login" in st.session_state and st.session_state.show_login:
@@ -158,7 +162,7 @@ if "show_login" in st.session_state and st.session_state.show_login:
 # ---------------- CHAT SECTION ---------------- #
 
 # Display title & subtitle
-st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>call me mommy 🤰</p></div>", unsafe_allow_html=True)
 
 # Check if user is logged in
 user_id = st.session_state.user_id if st.session_state.user_logged_in else None
@@ -172,20 +176,26 @@ for message in chat_history[1:]:  # Skip system message
     role_class = "user-message" if message["role"] == "user" else "ai-message"
     st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
 
-# Suggested questions dropdown
-with st.expander("💡 Need ideas? Click here for example questions."):
+# Suggested questions dropdown with clickable options
+with st.expander("💡 Need ideas? Click a question to ask it."):
     example_questions = [
         "When should my baby start doing tummy time?",
         "How can I cure my C-section?",
         "When does the belly button fall?",
-        "How long after birth can I bath my baby?",
+        "How long after birth can I shower my baby?",
         "How to avoid stretch marks during my pregnancy?"
     ]
     for question in example_questions:
-        st.markdown(f"- {question}")
+        if st.button(question, key=question):
+            st.session_state["user_input"] = question
+            st.rerun()
 
 # Chat input
 user_input = st.chat_input("Type your question here...")
+
+if "user_input" in st.session_state and st.session_state["user_input"]:
+    user_input = st.session_state["user_input"]
+    del st.session_state["user_input"]  # Clear the stored question after use
 
 if user_input:
     chat_history.append({"role": "user", "content": user_input})
