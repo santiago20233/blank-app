@@ -106,7 +106,7 @@ for message in st.session_state.chat_history[1:]:
     role_class = "user-message" if message["role"] == "user" else "ai-message"
     st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
 
-# ---------------- SUGGESTED QUESTIONS ---------------- #
+# ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
 
 suggestions = [
     "When should my baby start doing tummy time?",
@@ -116,11 +116,7 @@ suggestions = [
     "How to avoid stretch marks during my pregnancy?"
 ]
 
-selected_question = st.selectbox("💡 Need ideas? Select a question:", [""] + suggestions)
-
-if selected_question and selected_question != "":
-    st.session_state.chat_history.append({"role": "user", "content": selected_question})
-    st.rerun()  # Force chat to display the selected question
+st.selectbox("💡 Suggested Questions (View Only)", ["Select a question"] + suggestions, index=0, disabled=True)
 
 # ---------------- CHAT INPUT ---------------- #
 
