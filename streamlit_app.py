@@ -87,7 +87,7 @@ if "show_login" in st.session_state and st.session_state.show_login:
 # ---------------- CHAT SECTION ---------------- #
 
 # Display title & subtitle
-st.markdown("<div class='title-container'><p class='title'>FIFI</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
 
 # Retrieve chat history for logged-in users
 user_id = st.session_state.user_id if st.session_state.user_logged_in else None
@@ -142,7 +142,7 @@ if user_input:
     # Show persistent typing indicator
     typing_placeholder = st.empty()
     with typing_placeholder:
-        st.markdown("<div class='typing-indicator'>Fifi is typing...</div>", unsafe_allow_html=True)
+        st.markdown("<div class='typing-indicator'>typing...</div>", unsafe_allow_html=True)
 
     # Get response
     response = client.chat.completions.create(
