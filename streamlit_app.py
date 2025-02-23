@@ -22,7 +22,6 @@ client = OpenAI(api_key=openai_api_key)
 
 # ---------------- UI CUSTOMIZATION ---------------- #
 
-# Custom CSS for WhatsApp-style chat
 st.markdown("""
     <style>
         .title-container {
@@ -30,9 +29,9 @@ st.markdown("""
             margin-bottom: 10px;
         }
         .title {
-            font-size: 90px; /* Bigger title */
+            font-size: 100px; /* Even Bigger */
             font-weight: bold;
-            color: #FF69B4; /* Pink */
+            color: #FF69B4; /* Pink color */
             text-transform: lowercase;
         }
         .subtitle {
@@ -107,6 +106,16 @@ st.markdown("""
             text-decoration: underline;
             cursor: pointer;
         }
+        .signin-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: #ff69b4;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -176,13 +185,15 @@ if "show_login" in st.session_state and st.session_state.show_login:
 
 # ---------------- CHAT SECTION ---------------- #
 
+# Sign-in button (always visible for guests)
+if not st.session_state.user_logged_in:
+    st.markdown('<div class="signin-button">Sign in</div>', unsafe_allow_html=True)
+
 # Display title & subtitle
 st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>call me mommy 🤰</p></div>", unsafe_allow_html=True)
 
-# Check if user is logged in
-user_id = st.session_state.user_id if st.session_state.user_logged_in else None
-
 # Retrieve chat history (only if logged in)
+user_id = st.session_state.user_id if st.session_state.user_logged_in else None
 chat_ref = db.collection("chats").document(user_id) if user_id else None
 chat_history = chat_ref.get().to_dict()["history"] if chat_ref and chat_ref.get().exists else [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant."}]
 
@@ -191,35 +202,15 @@ for message in chat_history[1:]:
     role_class = "user-message" if message["role"] == "user" else "ai-message"
     st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
 
-# Suggested questions dropdown (Clickable)
-with st.expander("💡 Need ideas? Click a question to ask it."):
-    example_questions = [
-        "When should my baby start doing tummy time?",
-        "How can I cure my C-section?",
-        "When does the belly button fall?",
-        "How long after birth can I shower my baby?",
-        "How to avoid stretch marks during my pregnancy?"
-    ]
-    for question in example_questions:
-        if st.button(question, key=question):
-            st.session_state["user_input"] = question
-            st.rerun()
-
 # Chat input
 user_input = st.chat_input("Type your question here...")
 
-if "user_input" in st.session_state and st.session_state["user_input"]:
-    user_input = st.session_state["user_input"]
-    del st.session_state["user_input"]
-
 if user_input:
     chat_history.append({"role": "user", "content": user_input})
-
-    # Show typing indicator
+    
     with st.spinner("Fifi is typing..."):
         time.sleep(1.5)
 
-    # Get AI Response
     response = client.chat.completions.create(
         model="gpt-4",
         messages=chat_history,
@@ -234,4 +225,3 @@ if user_input:
         chat_ref.set({"history": chat_history})
 
     st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
-
