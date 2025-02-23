@@ -101,52 +101,6 @@ if "chat_history" not in st.session_state:
 if user_id and chat_ref.get().exists:
     st.session_state.chat_history = chat_ref.get().to_dict()["history"]
 
-# ---------------- SUGGESTED QUESTIONS (ONLY AT START) ---------------- #
-if len(st.session_state.chat_history) == 1:
-    suggested_questions = {
-        "👶 Baby Care": [
-            "How do I establish a sleep routine for my newborn?",
-            "What are safe sleeping practices for my baby?",
-            "How can I soothe a colicky baby?"
-        ],
-        "🤱 Postpartum Recovery": [
-            "What should I expect during my postpartum recovery?",
-            "How can I care for my C-section wound effectively?",
-            "How do I manage postpartum depression?"
-        ],
-        "🤰 Pregnancy": [
-            "What are the essential vitamins and nutrients I should take during pregnancy?",
-            "How can I manage morning sickness effectively?",
-            "What safe exercises can I do during pregnancy?"
-        ],
-        "🥣 Feeding & Nutrition": [
-            "How can I boost my milk supply naturally?",
-            "What are the signs of a proper latch during breastfeeding?",
-            "When is it recommended to introduce solid foods?"
-        ],
-        "📈 Development & Milestones": [
-            "What are the key developmental milestones I should look for in my baby?",
-            "When should I be concerned about potential developmental delays?",
-            "How can I support my baby’s motor skill development?"
-        ],
-        "🏥 General Health & Safety": [
-            "How do I baby-proof my home?",
-            "What are the recommended vaccination schedules for my baby?",
-            "What are the early signs of common illnesses in infants?"
-        ]
-    }
-
-    with st.expander("💡 Suggested Questions"):
-        for category, questions in suggested_questions.items():
-            st.markdown(f"**{category}**")
-            for question in questions:
-                st.markdown(f"- {question}")
-
-# Display chat history (Even if logged out)
-for message in st.session_state.chat_history[1:]:  
-    role_class = "user-message" if message["role"] == "user" else "ai-message"
-    st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
-
 # ---------------- CHAT INPUT ---------------- #
 
 user_input = st.chat_input("Type your question here...")
@@ -171,6 +125,17 @@ if user_input:
     )
 
     assistant_reply = f"{response.choices[0].message.content}"
+
+    # Add medical disclaimer if necessary
+    if any(word in user_input.lower() for word in ["fever", "sick", "infection", "pain", "rash", "vomiting", "diarrhea"]):
+        assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
+
+    # Add related links with descriptions
+    assistant_reply += "\n\n**📚 Related articles for further reading:**"
+    assistant_reply += "\n- **[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."
+    assistant_reply += "\n- **[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."
+    assistant_reply += "\n- **[Safe Sleeping Practices](https://example.com/safe-sleeping)** – How to ensure a safe and comfortable sleep environment for your baby."
+    assistant_reply += "\n- **[Managing Morning Sickness](https://example.com/morning-sickness)** – Strategies to ease nausea and discomfort during pregnancy."
 
     # Remove typing indicator
     typing_placeholder.empty()
