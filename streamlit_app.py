@@ -101,9 +101,35 @@ if "chat_history" not in st.session_state:
 if user_id and chat_ref.get().exists:
     st.session_state.chat_history = chat_ref.get().to_dict()["history"]
 
+# ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
+suggested_questions = {
+    "👶 Baby Care": [
+        "When does the belly button fall off?",
+        "When should my baby start doing tummy time?",
+        "How do I establish a sleep routine for my newborn?",
+        "When is it recommended to introduce solid foods?"
+    ],
+    "🤱 Postpartum Recovery": [
+        "How can I care for my C-section wound?",
+        "What should I expect during postpartum recovery?"
+    ],
+    "🤰 Pregnancy": [
+        "How to avoid stretch marks during my pregnancy?",
+        "What are the essential vitamins and nutrients I should take?"
+    ]
+}
+
+selected_category = st.selectbox("💡 Suggested Questions", ["Select a category"] + list(suggested_questions.keys()))
+
+if selected_category != "Select a category":
+    selected_question = st.selectbox("Choose a question:", ["Select a question"] + suggested_questions[selected_category])
+    
+    if selected_question != "Select a question":
+        user_input = selected_question
+
 # ---------------- CHAT INPUT ---------------- #
 
-user_input = st.chat_input("Type your question here...")
+user_input = st.chat_input("Type your question here...") if "user_input" not in locals() else user_input
 
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
@@ -134,8 +160,6 @@ if user_input:
     assistant_reply += "\n\n**📚 Related articles for further reading:**"
     assistant_reply += "\n- **[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."
     assistant_reply += "\n- **[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."
-    assistant_reply += "\n- **[Safe Sleeping Practices](https://example.com/safe-sleeping)** – How to ensure a safe and comfortable sleep environment for your baby."
-    assistant_reply += "\n- **[Managing Morning Sickness](https://example.com/morning-sickness)** – Strategies to ease nausea and discomfort during pregnancy."
 
     # Remove typing indicator
     typing_placeholder.empty()
