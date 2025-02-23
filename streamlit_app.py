@@ -93,37 +93,17 @@ st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='sub
 user_id = st.session_state.user_id if st.session_state.user_logged_in else None
 chat_ref = db.collection("chats").document(user_id) if user_id else None
 
-# ---------------- LOCAL CHAT HISTORY FOR LOGGED-OUT USERS ---------------- #
+# ---------------- LOAD CHAT HISTORY ---------------- #
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant who always responds in a warm, supportive, and comforting tone. Your goal is to make users feel heard, validated, and cared for in their motherhood journey."}]
+    if user_id and chat_ref.get().exists:
+        st.session_state.chat_history = chat_ref.get().to_dict()["history"]
+    else:
+        st.session_state.chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant who always responds in a warm, supportive, and comforting tone. Your goal is to make users feel heard, validated, and cared for in their motherhood journey."}]
 
-# Load chat history from Firestore if logged in
-if user_id and chat_ref.get().exists:
-    st.session_state.chat_history = chat_ref.get().to_dict()["history"]
-
-# ---------------- SUGGESTED QUESTIONS (DROPDOWN BUT CAN STILL TYPE) ---------------- #
-suggested_questions = {
-    "👶 Baby Care": [
-        "When does the belly button fall off?",
-        "When should my baby start doing tummy time?",
-        "How do I establish a sleep routine for my newborn?",
-        "When is it recommended to introduce solid foods?"
-    ],
-    "🤱 Postpartum Recovery": [
-        "How can I care for my C-section wound?",
-        "What should I expect during postpartum recovery?"
-    ],
-    "🤰 Pregnancy": [
-        "How to avoid stretch marks during my pregnancy?",
-        "What are the essential vitamins and nutrients I should take?"
-    ]
-}
-
-with st.expander("💡 Suggested Questions"):
-    for category, questions in suggested_questions.items():
-        st.markdown(f"**{category}**")
-        for question in questions:
-            st.markdown(f"- {question}")
+# Display full chat history
+for message in st.session_state.chat_history[1:]:  
+    role_class = "user-message" if message["role"] == "user" else "ai-message"
+    st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
 
 # ---------------- CHAT INPUT ---------------- #
 
