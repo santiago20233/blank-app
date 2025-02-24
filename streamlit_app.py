@@ -43,7 +43,7 @@ if "user_logged_in" not in st.session_state:
     st.session_state.user_logged_in = False
     st.session_state.user_id = None
 
-# Sign In / Sign Up buttons at the top
+# Login & Signup buttons next to each other
 col1, col2 = st.columns([1, 1])
 
 with col1:
@@ -125,20 +125,28 @@ else:
     st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
 
 # ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
-suggested_questions = [
-    "When does the belly button fall off?",
-    "When should my baby start doing tummy time?",
-    "How do I establish a sleep routine for my newborn?",
-    "When is it recommended to introduce solid foods?",
-    "How can I care for my C-section wound?",
-    "What should I expect during postpartum recovery?",
-    "How to avoid stretch marks during my pregnancy?",
-    "What are the essential vitamins and nutrients I should take?"
-]
+suggested_questions = {
+    "👶 Baby Care": [
+        "When does the belly button fall off?",
+        "When should my baby start doing tummy time?",
+        "How do I establish a sleep routine for my newborn?",
+        "When is it recommended to introduce solid foods?"
+    ],
+    "🤱 Postpartum Recovery": [
+        "How can I care for my C-section wound?",
+        "What should I expect during postpartum recovery?"
+    ],
+    "🤰 Pregnancy": [
+        "How to avoid stretch marks during my pregnancy?",
+        "What are the essential vitamins and nutrients I should take?"
+    ]
+}
 
-selected_question = st.selectbox("💡 Suggested Questions", ["Select a question..."] + suggested_questions)
-if selected_question and selected_question != "Select a question...":
-    user_input = selected_question
+with st.expander("💡 Suggested Questions"):
+    for category, questions in suggested_questions.items():
+        st.markdown(f"**{category}**")
+        for question in questions:
+            st.markdown(f"- {question}")
 
 # ---------------- CHAT INPUT ---------------- #
 
