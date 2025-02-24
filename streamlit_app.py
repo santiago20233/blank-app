@@ -134,23 +134,33 @@ suggested_questions = {
     ]
 }
 
-selected_question = st.selectbox("💡 Suggested Questions", ["Select a question..."] + [q for cat in suggested_questions.values() for q in cat])
-if selected_question != "Select a question...":
-    st.session_state.selected_question = selected_question
+with st.expander("💡 Suggested Questions"):
+    for category, questions in suggested_questions.items():
+        st.markdown(f"**{category}**")
+        for question in questions:
+            st.markdown(f"- {question}")
+
+# ---------------- DISPLAY FULL CHAT HISTORY ---------------- #
+for message in st.session_state.chat_history[1:]:  
+    role_class = "user-message" if message["role"] == "user" else "ai-message"
+    st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
 
 # ---------------- CHAT INPUT ---------------- #
 
-user_input = st.chat_input("Type your question here...") or st.session_state.get("selected_question", "")
+user_input = st.chat_input("Type your question here...")
 
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
 
+    # Display user message immediately
     st.markdown(f"<div class='chat-container'><div class='chat-bubble user-message'>{user_input}</div></div>", unsafe_allow_html=True)
 
+    # Show persistent typing indicator
     typing_placeholder = st.empty()
     with typing_placeholder:
         st.markdown("<div class='typing-indicator'>typing...</div>", unsafe_allow_html=True)
 
+    # Get response
     response = client.chat.completions.create(
         model="gpt-4",
         messages=st.session_state.chat_history,
@@ -159,8 +169,25 @@ if user_input:
     )
 
     assistant_reply = f"{response.choices[0].message.content}"
+
+    # Add medical disclaimer if necessary
+    if any(word in user_input.lower() for word in ["fever", "sick", "infection", "pain", "rash", "vomiting", "diarrhea"]):
+        assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
+
+    # Add related links with descriptions
+    assistant_reply += "\n\n**📚 Related articles for further reading:**"
+    assistant_reply += "\n- **[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."
+    assistant_reply += "\n- **[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."
+
+    # Remove typing indicator
     typing_placeholder.empty()
 
+    # Add response to chat history
     st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
 
+    # Save chat history only if user is logged in
+    if user_id:
+        chat_ref.set({"history": st.session_state.chat_history})
+
+    # Display Fifi's response
     st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
