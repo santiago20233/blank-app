@@ -1,8 +1,3 @@
-
-Fiona BaumAlti <fiona.baumalti@gmail.com>
-17:48 (hace 2 minutos)
-para mí
-
 import json
 import streamlit as st
 import firebase_admin
