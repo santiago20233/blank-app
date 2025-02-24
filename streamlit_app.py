@@ -47,9 +47,9 @@ if "user_logged_in" not in st.session_state:
 if st.session_state.user_logged_in:
     user_doc = db.collection("users").document(st.session_state.user_id).get()
     user_data = user_doc.to_dict() if user_doc.exists else {}
-    
+   
     user_initials = (user_data.get("first_name", "U")[0] + user_data.get("last_name", "N")[0]).upper()
-    
+   
     with st.sidebar:
         if st.button(f"🔵 {user_initials} (Profile)"):
             profile_expander = st.expander("User Profile")
@@ -59,7 +59,7 @@ if st.session_state.user_logged_in:
                 st.write(f"**Baby’s Name:** {user_data.get('baby_name', 'Not Provided')}")
                 st.write(f"**Baby’s Birth Date:** {user_data.get('baby_birth_date', 'Not Provided')}")
                 st.write(f"**Pregnancy Week:** {user_data.get('pregnancy_weeks', 'Not Provided')}")
-                
+               
                 if st.button("Log out"):
                     st.session_state.user_logged_in = False
                     st.session_state.user_id = None
@@ -80,7 +80,7 @@ if "show_login" in st.session_state and st.session_state.show_login:
         last_name = st.text_input("Last Name (for sign-up)")
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
-        
+       
         baby_name = st.text_input("Baby's Name (Optional)")
         baby_birth_date = st.date_input("Baby's Birth Date (Optional)")
         pregnancy_weeks = st.number_input("Pregnancy Week (Optional)", min_value=1, max_value=40, step=1)
@@ -116,7 +116,7 @@ if "show_login" in st.session_state and st.session_state.show_login:
             except:
                 st.error("Sign-up failed. Try again.")
 
-# ---------------- SUGGESTED QUESTIONS (EXPANDER) ---------------- #
+# ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
 suggested_questions = {
     "👶 Baby Care": [
         "When does the belly button fall off?",
@@ -134,23 +134,13 @@ suggested_questions = {
     ]
 }
 
-with st.expander("💡 Suggested Questions"):
-    for category, questions in suggested_questions.items():
-        st.markdown(f"**{category}**")
-        for question in questions:
-            st.markdown(f"- {question}")
-
-# ---------------- DISPLAY FULL CHAT HISTORY ---------------- #
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-for message in st.session_state.chat_history:  
-    role_class = "user-message" if message["role"] == "user" else "ai-message"
-    st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
+selected_question = st.selectbox("💡 Suggested Questions", ["Select a question..."] + [q for cat in suggested_questions.values() for q in cat])
+if selected_question != "Select a question...":
+    st.session_state.selected_question = selected_question
 
 # ---------------- CHAT INPUT ---------------- #
 
-user_input = st.chat_input("Type your question here...")
+user_input = st.chat_input("Type your question here...") or st.session_state.get("selected_question", "")
 
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
