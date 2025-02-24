@@ -25,15 +25,14 @@ client = OpenAI(api_key=openai_api_key)
 st.markdown("""
     <style>
         .title-container { text-align: center; margin-bottom: 10px; }
-        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; }
+        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; } /* BIG & PINK */
         .subtitle { font-size: 18px; font-weight: normal; color: #666; }
         .chat-container { display: flex; flex-direction: column; align-items: center; max-width: 600px; margin: auto; }
         .chat-bubble { padding: 12px; border-radius: 16px; margin: 8px 0; font-size: 16px; width: fit-content; max-width: 80%; }
         .user-message { background-color: #4a90e2; color: white; align-self: flex-end; }
         .ai-message { background-color: #f1f1f1; border: 1px solid #ddd; color: black; align-self: flex-start; }
         .typing-indicator { font-size: 14px; color: #888; font-style: italic; margin-top: 5px; }
-        .auth-buttons { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
-        .auth-button { background-color: #ff69b4; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 16px; }
+        .signin-button { position: absolute; top: 15px; right: 15px; background-color: #ff69b4; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -43,31 +42,23 @@ if "user_logged_in" not in st.session_state:
     st.session_state.user_logged_in = False
     st.session_state.user_id = None
 
-# Login & Signup buttons next to each other
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    if not st.session_state.user_logged_in and st.button("Sign Up", key="signup_btn"):
-        st.session_state.show_signup = True
-        st.session_state.show_login = False
-        st.rerun()
-
-with col2:
-    if not st.session_state.user_logged_in and st.button("Log In", key="login_btn"):
+# Always show sign-in button at the top
+if not st.session_state.user_logged_in:
+    if st.button("Sign in"):
         st.session_state.show_login = True
-        st.session_state.show_signup = False
         st.rerun()
 
 # ---------------- LOGIN FORM ---------------- #
 
 if "show_login" in st.session_state and st.session_state.show_login:
     with st.sidebar:
-        st.title("Welcome Back! 👋")
-        
+        st.title("Sign Up / Login")
+
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
-        
-        login_btn = st.button("Log In")
+
+        login_btn = st.button("Login")
+        signup_btn = st.button("Sign Up")
 
         if login_btn:
             try:
@@ -75,54 +66,38 @@ if "show_login" in st.session_state and st.session_state.show_login:
                 st.session_state.user_id = user.uid
                 st.session_state.user_logged_in = True
                 st.success("Logged in successfully!")
-                st.session_state.show_login = False
                 st.rerun()
             except:
-                st.error("Invalid email or password. Try again.")
-
-# ---------------- SIGNUP FORM ---------------- #
-
-if "show_signup" in st.session_state and st.session_state.show_signup:
-    with st.sidebar:
-        st.title("Create an Account 🎉")
-        
-        first_name = st.text_input("First Name")
-        last_name = st.text_input("Last Name")
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
-        
-        baby_name = st.text_input("Baby's Name (Optional)")
-        pregnancy_weeks = st.number_input("Pregnancy Week (Optional)", min_value=1, max_value=40, step=1)
-        baby_birth_date = st.date_input("Baby's Birth Date (Optional)")
-        
-        signup_btn = st.button("Sign Up")
+                st.error("Invalid credentials.")
 
         if signup_btn:
             try:
                 user = auth.create_user(email=email, password=password)
                 st.session_state.user_id = user.uid
                 db.collection("users").document(user.uid).set({
-                    "first_name": first_name,
-                    "last_name": last_name,
-                    "email": email,
-                    "baby_name": baby_name if baby_name else None,
-                    "pregnancy_weeks": pregnancy_weeks if pregnancy_weeks > 0 else None,
-                    "baby_birth_date": str(baby_birth_date) if baby_birth_date else None,
-                    "sign_up_date": firestore.SERVER_TIMESTAMP
-                })
+    "email": email,
+    "sign_up_date": firestore.SERVER_TIMESTAMP
+})
                 st.success("Account created! Please log in.")
-                st.session_state.show_signup = False
                 st.rerun()
             except:
                 st.error("Sign-up failed. Try again.")
 
-# ---------------- DISPLAY TITLE ---------------- #
-if st.session_state.user_logged_in:
-    user_doc = db.collection("users").document(st.session_state.user_id).get()
-    user_data = user_doc.to_dict() if user_doc.exists else {}
-    st.markdown(f"<p class='title'>Hi, {user_data.get('first_name', 'User')}! 👋</p>", unsafe_allow_html=True)
-else:
-    st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
+# ---------------- CHAT SECTION ---------------- #
+
+# Display title & subtitle
+st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
+
+# Retrieve chat history for logged-in users
+user_id = st.session_state.user_id if st.session_state.user_logged_in else None
+chat_ref = db.collection("chats").document(user_id) if user_id else None
+
+# ---------------- LOAD CHAT HISTORY ---------------- #
+if "chat_history" not in st.session_state:
+    if user_id and chat_ref.get().exists:
+        st.session_state.chat_history = chat_ref.get().to_dict()["history"]
+    else:
+        st.session_state.chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant who always responds in a warm, supportive, and comforting tone. Your goal is to make users feel heard, validated, and cared for in their motherhood journey."}]
 
 # ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
 suggested_questions = {
@@ -148,17 +123,27 @@ with st.expander("💡 Suggested Questions"):
         for question in questions:
             st.markdown(f"- {question}")
 
+# ---------------- DISPLAY FULL CHAT HISTORY ---------------- #
+for message in st.session_state.chat_history[1:]:  
+    role_class = "user-message" if message["role"] == "user" else "ai-message"
+    st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
+
 # ---------------- CHAT INPUT ---------------- #
 
-if user_input := st.chat_input("Type your question here..."):
+user_input = st.chat_input("Type your question here...")
+
+if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
 
+    # Display user message immediately
     st.markdown(f"<div class='chat-container'><div class='chat-bubble user-message'>{user_input}</div></div>", unsafe_allow_html=True)
 
+    # Show persistent typing indicator
     typing_placeholder = st.empty()
     with typing_placeholder:
         st.markdown("<div class='typing-indicator'>typing...</div>", unsafe_allow_html=True)
 
+    # Get response
     response = client.chat.completions.create(
         model="gpt-4",
         messages=st.session_state.chat_history,
@@ -166,10 +151,26 @@ if user_input := st.chat_input("Type your question here..."):
         max_tokens=600
     )
 
-    assistant_reply = response.choices[0].message.content
+    assistant_reply = f"{response.choices[0].message.content}"
 
+    # Add medical disclaimer if necessary
+    if any(word in user_input.lower() for word in ["fever", "sick", "infection", "pain", "rash", "vomiting", "diarrhea"]):
+        assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
+
+    # Add related links with descriptions
+    assistant_reply += "\n\n**📚 Related articles for further reading:**"
+    assistant_reply += "\n- **[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."
+    assistant_reply += "\n- **[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."
+
+    # Remove typing indicator
     typing_placeholder.empty()
 
+    # Add response to chat history
     st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
 
+    # Save chat history only if user is logged in
+    if user_id:
+        chat_ref.set({"history": st.session_state.chat_history})
+
+    # Display Fifi's response
     st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
