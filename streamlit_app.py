@@ -138,16 +138,3 @@ if user_input:
         chat_ref.set({"history": st.session_state.chat_history})
 
     st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
-
-    # Remove typing indicator
-    typing_placeholder.empty()
-
-    # Add response to chat history
-    st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
-
-    # Save chat history only if user is logged in
-    if user_id:
-        chat_ref.set({"history": st.session_state.chat_history})
-
-    # Display Fifi's response
-    st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
