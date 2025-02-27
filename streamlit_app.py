@@ -4,6 +4,8 @@ import firebase_admin
 from firebase_admin import credentials, firestore, auth
 from openai import OpenAI
 import time
+import requests
+from bs4 import BeautifulSoup
 
 # Load Firebase credentials
 firebase_config = st.secrets["firebase"]
@@ -20,9 +22,7 @@ db = firestore.client()
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=openai_api_key)
 
-import requests
-from bs4 import BeautifulSoup
-
+# Function to fetch related articles
 def fetch_related_articles(query):
     # Ensure query is a string
     query = query.strip() if query else "pregnancy tips"
@@ -49,35 +49,14 @@ def fetch_related_articles(query):
 
                 articles.append({"title": title, "url": url, "description": description})
 
-    return articles
-
-    
-    articles = []
-    
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, "html.parser")
-        results = soup.find_all("div", class_="tF2Cxc", limit=3)  
-
-        for result in results:
-            title_tag = result.find("h3")
-            link_tag = result.find("a")
-            desc_tag = result.find("span", class_="aCOpRe")
-
-            if title_tag and link_tag:
-                title = title_tag.text.strip()
-                url = link_tag["href"]
-                description = desc_tag.text.strip() if desc_tag else "No description available."
-
-                articles.append({"title": title, "url": url, "description": description})
-
-    return articles
+    return articles  # ✅ Only one return statement!
 
 # ---------------- UI CUSTOMIZATION ---------------- #
 
 st.markdown("""
     <style>
         .title-container { text-align: center; margin-bottom: 10px; }
-        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; } /* BIG & PINK */
+        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; }
         .subtitle { font-size: 18px; font-weight: normal; color: #666; }
         .chat-container { display: flex; flex-direction: column; align-items: center; max-width: 600px; margin: auto; }
         .chat-bubble { padding: 12px; border-radius: 16px; margin: 8px 0; font-size: 16px; width: fit-content; max-width: 80%; }
@@ -220,16 +199,16 @@ if articles:
     for article in articles:
         assistant_reply += f"\n- **[{article['title']}]({article['url']})** – {article['description']}"
 
-    
-    # Remove typing indicator
-    typing_placeholder.empty()
+# Remove typing indicator
+typing_placeholder.empty()
 
-    # Add response to chat history
-    st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
+# Add response to chat history
+st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
 
-    # Save chat history only if user is logged in
-    if user_id:
-        chat_ref.set({"history": st.session_state.chat_history})
+# Save chat history only if user is logged in
+if user_id:
+    chat_ref.set({"history": st.session_state.chat_history})
 
-    # Display Fifi's response
-    st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
+# Display Fifi's response
+st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
+
