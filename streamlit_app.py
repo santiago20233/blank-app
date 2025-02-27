@@ -25,14 +25,13 @@ client = OpenAI(api_key=openai_api_key)
 st.markdown("""
     <style>
         .title-container { text-align: center; margin-bottom: 10px; }
-        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; } /* BIG & PINK */
+        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; }
         .subtitle { font-size: 18px; font-weight: normal; color: #666; }
         .chat-container { display: flex; flex-direction: column; align-items: center; max-width: 600px; margin: auto; }
         .chat-bubble { padding: 12px; border-radius: 16px; margin: 8px 0; font-size: 16px; width: fit-content; max-width: 80%; }
         .user-message { background-color: #4a90e2; color: white; align-self: flex-end; }
         .ai-message { background-color: #f1f1f1; border: 1px solid #ddd; color: black; align-self: flex-start; }
         .typing-indicator { font-size: 14px; color: #888; font-style: italic; margin-top: 5px; }
-        .signin-button { position: absolute; top: 15px; right: 15px; background-color: #ff69b4; color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -42,7 +41,6 @@ if "user_logged_in" not in st.session_state:
     st.session_state.user_logged_in = False
     st.session_state.user_id = None
 
-# Always show sign-in button at the top
 if not st.session_state.user_logged_in:
     if st.button("Sign in"):
         st.session_state.show_login = True
@@ -53,14 +51,10 @@ if not st.session_state.user_logged_in:
 if "show_login" in st.session_state and st.session_state.show_login:
     with st.sidebar:
         st.title("Sign Up / Login")
-
         email = st.text_input("Email")
         password = st.text_input("Password", type="password")
 
-        login_btn = st.button("Login")
-        signup_btn = st.button("Sign Up")
-
-        if login_btn:
+        if st.button("Login"):
             try:
                 user = auth.get_user_by_email(email)
                 st.session_state.user_id = user.uid
@@ -70,7 +64,7 @@ if "show_login" in st.session_state and st.session_state.show_login:
             except:
                 st.error("Invalid credentials.")
 
-        if signup_btn:
+        if st.button("Sign Up"):
             try:
                 user = auth.create_user(email=email, password=password)
                 st.session_state.user_id = user.uid
@@ -85,48 +79,17 @@ if "show_login" in st.session_state and st.session_state.show_login:
 
 # ---------------- CHAT SECTION ---------------- #
 
-# Display title & subtitle
 st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
 
-# Retrieve chat history for logged-in users
+# Retrieve chat history
 user_id = st.session_state.user_id if st.session_state.user_logged_in else None
 chat_ref = db.collection("chats").document(user_id) if user_id else None
 
-# ---------------- LOAD CHAT HISTORY ---------------- #
 if "chat_history" not in st.session_state:
     if user_id and chat_ref.get().exists:
         st.session_state.chat_history = chat_ref.get().to_dict()["history"]
     else:
         st.session_state.chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant who always responds in a warm, supportive, and comforting tone. Your goal is to make users feel heard, validated, and cared for in their motherhood journey."}]
-
-# ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
-suggested_questions = {
-    "👶 Baby Care": [
-        "When does the belly button fall off?",
-        "When should my baby start doing tummy time?",
-        "How do I establish a sleep routine for my newborn?",
-        "When is it recommended to introduce solid foods?"
-    ],
-    "🤱 Postpartum Recovery": [
-        "How can I care for my C-section wound?",
-        "What should I expect during postpartum recovery?"
-    ],
-    "🤰 Pregnancy": [
-        "How to avoid stretch marks during my pregnancy?",
-        "What are the essential vitamins and nutrients I should take?"
-    ]
-}
-
-with st.expander("💡 Suggested Questions"):
-    for category, questions in suggested_questions.items():
-        st.markdown(f"**{category}**")
-        for question in questions:
-            st.markdown(f"- {question}")
-
-# ---------------- DISPLAY FULL CHAT HISTORY ---------------- #
-for message in st.session_state.chat_history[1:]:  
-    role_class = "user-message" if message["role"] == "user" else "ai-message"
-    st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
 
 # ---------------- CHAT INPUT ---------------- #
 
@@ -135,15 +98,15 @@ user_input = st.chat_input("Talk to fifi...")
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-    # Display user message immediately
+    # Display user message
     st.markdown(f"<div class='chat-container'><div class='chat-bubble user-message'>{user_input}</div></div>", unsafe_allow_html=True)
 
-    # Show persistent typing indicator
+    # Show typing indicator
     typing_placeholder = st.empty()
     with typing_placeholder:
         st.markdown("<div class='typing-indicator'>typing...</div>", unsafe_allow_html=True)
 
-    # Get response
+    # Get response from OpenAI
     response = client.chat.completions.create(
         model="gpt-4",
         messages=st.session_state.chat_history,
@@ -158,15 +121,18 @@ if user_input:
     related_articles = {
         "belly button": ["**[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."],
         "c-section": ["**[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."],
-        "fever": ["**[When to Worry About a Baby’s Fever](https://example.com/baby-fever)** – Signs and symptoms to monitor when your baby has a fever."],
-        "solid foods": ["**[Introducing Solids](https://example.com/starting-solids)** – A guide to introducing solid foods to your baby."],
+        "fever": ["**[Baby Fever Guide](https://example.com/baby-fever)** – How to manage and when to worry about a baby’s fever."],
+        "postpartum": ["**[Postpartum Recovery Tips](https://example.com/postpartum-recovery)** – What to expect and how to care for yourself after birth."],
+        "solid foods": ["**[Introducing Solids](https://example.com/starting-solids)** – A step-by-step guide for when and how to start solids."],
+        "sleep routine": ["**[Newborn Sleep Guide](https://example.com/newborn-sleep)** – Expert tips for better baby sleep."],
+        "stretch marks": ["**[Preventing Stretch Marks](https://example.com/stretch-marks)** – How to minimize stretch marks during pregnancy."],
     }
 
-    matched_articles = []
-    for keyword, articles in related_articles.items():
-        if keyword in user_input.lower():
-            matched_articles.extend(articles)
+    # Find matching articles based on keywords in user input
+    matched_articles = [articles for keyword, articles in related_articles.items() if keyword in user_input.lower()]
+    matched_articles = [article for sublist in matched_articles for article in sublist]  # Flatten list
 
+    # Append related articles if any matches
     if matched_articles:
         assistant_reply += "\n\n**📚 Related articles:**"
         for article in matched_articles:
@@ -175,9 +141,10 @@ if user_input:
     # Remove typing indicator
     typing_placeholder.empty()
 
-    # Save and display response
+    # Save chat history
     st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
     if user_id:
         chat_ref.set({"history": st.session_state.chat_history})
 
+    # Display assistant response
     st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
