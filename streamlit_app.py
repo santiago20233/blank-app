@@ -134,15 +134,15 @@ user_input = st.chat_input("Talk to fifi...")
 
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
-
+    
     # Display user message immediately
     st.markdown(f"<div class='chat-container'><div class='chat-bubble user-message'>{user_input}</div></div>", unsafe_allow_html=True)
-
+    
     # Show persistent typing indicator
     typing_placeholder = st.empty()
     with typing_placeholder:
         st.markdown("<div class='typing-indicator'>typing...</div>", unsafe_allow_html=True)
-
+    
     # Get response
     response = client.chat.completions.create(
         model="gpt-4",
@@ -150,27 +150,28 @@ if user_input:
         temperature=0.4,
         max_tokens=600
     )
-
+    
     assistant_reply = f"{response.choices[0].message.content}"
-
-    # Add medical disclaimer if necessary
-    if any(word in user_input.lower() for word in ["fever", "sick", "infection", "pain", "rash", "vomiting", "diarrhea"]):
-        assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
-
-    # Add related links with descriptions
-    assistant_reply += "\n\n**📚 Related articles for further reading:**"
-    assistant_reply += "\n- **[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."
-    assistant_reply += "\n- **[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."
-
+    
+    # Fetch related articles
+    articles = fetch_related_articles(user_input)
+    
+    if articles:
+        assistant_reply += "\n\n**📚 Related articles for further reading:**"
+        for article in articles:
+            assistant_reply += f"\n- **[{article['title']}]({article['url']})**"
+    
     # Remove typing indicator
     typing_placeholder.empty()
-
+    
     # Add response to chat history
     st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
-
+    
     # Save chat history only if user is logged in
-    if user_id:
+    if "user_logged_in" in st.session_state and st.session_state.user_logged_in:
+        user_id = st.session_state.user_id
+        chat_ref = db.collection("chats").document(user_id)
         chat_ref.set({"history": st.session_state.chat_history})
-
+    
     # Display Fifi's response
     st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
