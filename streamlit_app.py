@@ -49,23 +49,23 @@ if not st.session_state.user_logged_in:
 
 # ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
 suggested_questions = {
-    "👶 Baby Care": [
-        "When does the belly button fall off?",
-        "When should my baby start doing tummy time?",
-        "How do I establish a sleep routine for my newborn?",
-        "When is it recommended to introduce solid foods?"
+    "👶 Cuidado del Bebé": [
+        "¿Cuándo se cae el cordón umbilical?",
+        "¿Cuándo debería empezar mi bebé con el tummy time?",
+        "¿Cómo puedo establecer una rutina de sueño para mi recién nacido?",
+        "¿Cuándo se recomienda introducir alimentos sólidos?"
     ],
-    "🤱 Postpartum Recovery": [
-        "How can I care for my C-section wound?",
-        "What should I expect during postpartum recovery?"
+    "🤱 Recuperación Postparto": [
+        "¿Cómo puedo cuidar mi herida de cesárea?",
+        "¿Qué debo esperar durante la recuperación postparto?"
     ],
-    "🤰 Pregnancy": [
-        "How to avoid stretch marks during my pregnancy?",
-        "What are the essential vitamins and nutrients I should take?"
+    "🤰 Embarazo": [
+        "¿Cómo evitar las estrías durante el embarazo?",
+        "¿Qué vitaminas y nutrientes son esenciales para mí?"
     ]
 }
 
-with st.expander("💡 Suggested Questions"):
+with st.expander("💡 Preguntas Sugeridas"):
     for category, questions in suggested_questions.items():
         st.markdown(f"**{category}**")
         for question in questions:
@@ -73,7 +73,7 @@ with st.expander("💡 Suggested Questions"):
 
 # ---------------- CHAT SECTION ---------------- #
 
-st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Call me mommy! 🤰</p></div>", unsafe_allow_html=True)
+st.markdown("<div class='title-container'><p class='title'>fifi</p><p class='subtitle'>Aquí para acompañarte en este hermoso viaje 🤰💖</p></div>", unsafe_allow_html=True)
 
 user_id = st.session_state.user_id if st.session_state.user_logged_in else None
 chat_ref = db.collection("chats").document(user_id) if user_id else None
@@ -82,7 +82,7 @@ if "chat_history" not in st.session_state:
     if user_id and chat_ref.get().exists:
         st.session_state.chat_history = chat_ref.get().to_dict()["history"]
     else:
-        st.session_state.chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant..."}]
+        st.session_state.chat_history = [{"role": "system", "content": "Eres Fifi, una asistente de embarazo y cuidado del bebé. Siempre brindas respuestas cálidas, comprensivas y amorosas para acompañar a las mamás en su viaje."}]
 
 # ---------------- DISPLAY CHAT HISTORY ---------------- #
 for message in st.session_state.chat_history[1:]:  
@@ -91,7 +91,7 @@ for message in st.session_state.chat_history[1:]:
 
 # ---------------- CHAT INPUT ---------------- #
 
-user_input = st.chat_input("Type your question here...")
+user_input = st.chat_input("Escribe tu pregunta aquí...")
 
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
@@ -99,7 +99,7 @@ if user_input:
 
     typing_placeholder = st.empty()
     with typing_placeholder:
-        st.markdown("<div class='typing-indicator'>typing...</div>", unsafe_allow_html=True)
+        st.markdown("<div class='typing-indicator'>Escribiendo...</div>", unsafe_allow_html=True)
 
     response = client.chat.completions.create(
         model="gpt-4",
@@ -110,19 +110,29 @@ if user_input:
 
     assistant_reply = f"{response.choices[0].message.content}"
 
-    # Add medical disclaimer if necessary
-    if any(word in user_input.lower() for word in ["fever", "sick", "infection", "pain", "rash", "vomiting", "diarrhea"]):
-        assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
+    # Selección dinámica de artículos relacionados en español
+    related_articles = {
+        "bebé": [
+            {"title": "Cuidado del recién nacido", "url": "https://ejemplo.com/cuidado-bebe", "description": "Consejos esenciales para cuidar a tu bebé en sus primeros meses."}
+        ],
+        "embarazo": [
+            {"title": "Alimentación en el embarazo", "url": "https://ejemplo.com/nutricion-embarazo", "description": "Descubre qué alimentos son más beneficiosos durante el embarazo."}
+        ],
+        "postparto": [
+            {"title": "Recuperación postparto", "url": "https://ejemplo.com/recuperacion-postparto", "description": "Todo lo que necesitas saber para cuidarte después del parto."}
+        ]
+    }
 
-    # Generate topic-specific related articles dynamically for each question
-    related_articles = [
-        {"title": "Newborn Care 101", "url": "https://example.com/newborn-care", "description": "Essential tips for taking care of your newborn."},
-        {"title": "Pregnancy Nutrition Guide", "url": "https://example.com/pregnancy-nutrition", "description": "Learn about the best foods to eat during pregnancy."},
-        {"title": "Postpartum Recovery Tips", "url": "https://example.com/postpartum-recovery", "description": "How to recover after giving birth and take care of yourself."}
-    ]
-    assistant_reply += "\n\n**📚 Related articles for further reading:**"
-    for article in related_articles:
-        assistant_reply += f"\n- **[{article['title']}]({article['url']})** – {article['description']}"
+    selected_articles = []
+    for key, articles in related_articles.items():
+        if key in user_input.lower():
+            selected_articles = articles
+            break
+
+    if selected_articles:
+        assistant_reply += "\n\n💖 **Artículos recomendados para ti:**"
+        for article in selected_articles:
+            assistant_reply += f"\n- **[{article['title']}]({article['url']})** – {article['description']}"
 
     typing_placeholder.empty()
     st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
