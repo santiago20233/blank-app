@@ -91,8 +91,14 @@ if "chat_history" not in st.session_state:
     else:
         st.session_state.chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant who always responds in a warm, supportive, and comforting tone. Your goal is to make users feel heard, validated, and cared for in their motherhood journey."}]
 
-# ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
+# ---------------- LOAD CHAT HISTORY ---------------- #
+if "chat_history" not in st.session_state:
+    if user_id and chat_ref.get().exists:
+        st.session_state.chat_history = chat_ref.get().to_dict()["history"]
+    else:
+        st.session_state.chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant who always responds in a warm, supportive, and comforting tone. Your goal is to make users feel heard, validated, and cared for in their motherhood journey."}]
 
+# ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
 suggested_questions = {
     "👶 Baby Care": [
         "When does the belly button fall off?",
@@ -117,7 +123,6 @@ with st.expander("💡 Suggested Questions"):
             st.markdown(f"- {question}")
 
 # ---------------- DISPLAY FULL CHAT HISTORY ---------------- #
-
 for message in st.session_state.chat_history[1:]:  
     role_class = "user-message" if message["role"] == "user" else "ai-message"
     st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
@@ -150,20 +155,26 @@ if user_input:
     # ---------------- DYNAMIC RELATED ARTICLES ---------------- #
 
     related_articles = {
-        "belly button": ["**[Baby Belly Button Care](https://example.com/belly-button-care)**"],
-        "c-section": ["**[C-Section Recovery Guide](https://example.com/c-section-recovery)**"],
-        "fever": ["**[Baby Fever Guide](https://example.com/baby-fever)**"],
-        "postpartum": ["**[Postpartum Recovery Tips](https://example.com/postpartum-recovery)**"],
-        "solid foods": ["**[Introducing Solids](https://example.com/starting-solids)**"],
-        "sleep routine": ["**[Newborn Sleep Guide](https://example.com/newborn-sleep)**"],
-        "stretch marks": ["**[Preventing Stretch Marks](https://example.com/stretch-marks)**"],
+        "belly button": ["**[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."],
+        "c-section": ["**[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."],
+        "fever": ["**[Baby Fever Guide](https://example.com/baby-fever)** – How to manage and when to worry about a baby’s fever."],
+        "postpartum": ["**[Postpartum Recovery Tips](https://example.com/postpartum-recovery)** – What to expect and how to care for yourself after birth."],
+        "solid foods": ["**[Introducing Solids](https://example.com/starting-solids)** – A step-by-step guide for when and how to start solids."],
+        "sleep routine": ["**[Newborn Sleep Guide](https://example.com/newborn-sleep)** – Expert tips for better baby sleep."],
+        "stretch marks": ["**[Preventing Stretch Marks](https://example.com/stretch-marks)** – How to minimize stretch marks during pregnancy."],
     }
 
+    # Find matching articles based on keywords in user input
     matched_articles = []
     for keyword, articles in related_articles.items():
         if keyword in user_input.lower():
             matched_articles.extend(articles)
 
+    # 🚀 DEBUG PRINTS - REMOVE THIS AFTER TESTING
+    print("User Input:", user_input)
+    print("Matched Articles:", matched_articles)
+
+    # Append related articles if any matches
     if matched_articles:
         assistant_reply += "\n\n**📚 Related articles:**"
         for article in matched_articles:
