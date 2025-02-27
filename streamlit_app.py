@@ -4,8 +4,6 @@ import firebase_admin
 from firebase_admin import credentials, firestore, auth
 from openai import OpenAI
 import time
-import requests
-from bs4 import BeautifulSoup
 
 # Load Firebase credentials
 firebase_config = st.secrets["firebase"]
@@ -22,41 +20,12 @@ db = firestore.client()
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=openai_api_key)
 
-# Function to fetch related articles
-def fetch_related_articles(query):
-    # Ensure query is a string
-    query = query.strip() if query else "pregnancy tips"
-
-    search_url = f"https://www.google.com/search?q={query.replace(' ', '+')}+site:healthline.com"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    response = requests.get(search_url, headers=headers)
-
-    articles = []
-
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.text, "html.parser")
-        results = soup.find_all("div", class_="tF2Cxc", limit=3)  
-
-        for result in results:
-            title_tag = result.find("h3")
-            link_tag = result.find("a")
-            desc_tag = result.find("span", class_="aCOpRe")
-
-            if title_tag and link_tag:
-                title = title_tag.text.strip()
-                url = link_tag["href"]
-                description = desc_tag.text.strip() if desc_tag else "No description available."
-
-                articles.append({"title": title, "url": url, "description": description})
-
-    return articles  # ✅ Only one return statement!
-
 # ---------------- UI CUSTOMIZATION ---------------- #
 
 st.markdown("""
     <style>
         .title-container { text-align: center; margin-bottom: 10px; }
-        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; }
+        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; } /* BIG & PINK */
         .subtitle { font-size: 18px; font-weight: normal; color: #666; }
         .chat-container { display: flex; flex-direction: column; align-items: center; max-width: 600px; margin: auto; }
         .chat-bubble { padding: 12px; border-radius: 16px; margin: 8px 0; font-size: 16px; width: fit-content; max-width: 80%; }
@@ -106,9 +75,9 @@ if "show_login" in st.session_state and st.session_state.show_login:
                 user = auth.create_user(email=email, password=password)
                 st.session_state.user_id = user.uid
                 db.collection("users").document(user.uid).set({
-    "email": email,
-    "sign_up_date": firestore.SERVER_TIMESTAMP
-})
+                    "email": email,
+                    "sign_up_date": firestore.SERVER_TIMESTAMP
+                })
                 st.success("Account created! Please log in.")
                 st.rerun()
             except:
@@ -184,31 +153,31 @@ if user_input:
 
     assistant_reply = f"{response.choices[0].message.content}"
 
-    # Add medical disclaimer if necessary
-    if any(word in user_input.lower() for word in ["fever", "sick", "infection", "pain", "rash", "vomiting", "diarrhea"]):
-        assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
+    # ---------------- DYNAMIC RELATED ARTICLES ---------------- #
 
-# Ensure user_input is always a string
-user_input = user_input.strip() if user_input else ""
+    related_articles = {
+        "belly button": ["**[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."],
+        "c-section": ["**[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."],
+        "fever": ["**[When to Worry About a Baby’s Fever](https://example.com/baby-fever)** – Signs and symptoms to monitor when your baby has a fever."],
+        "solid foods": ["**[Introducing Solids](https://example.com/starting-solids)** – A guide to introducing solid foods to your baby."],
+    }
 
-# Fetch related articles only if user_input is not empty
-articles = fetch_related_articles(user_input) if user_input else []
+    matched_articles = []
+    for keyword, articles in related_articles.items():
+        if keyword in user_input.lower():
+            matched_articles.extend(articles)
 
-if articles:
-    assistant_reply += "\n\n**📚 Related articles for further reading:**"
-    for article in articles:
-        assistant_reply += f"\n- **[{article['title']}]({article['url']})** – {article['description']}"
+    if matched_articles:
+        assistant_reply += "\n\n**📚 Related articles:**"
+        for article in matched_articles:
+            assistant_reply += f"\n- {article}"
 
-# Remove typing indicator
-typing_placeholder.empty()
+    # Remove typing indicator
+    typing_placeholder.empty()
 
-# Add response to chat history
-st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
+    # Save and display response
+    st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
+    if user_id:
+        chat_ref.set({"history": st.session_state.chat_history})
 
-# Save chat history only if user is logged in
-if user_id:
-    chat_ref.set({"history": st.session_state.chat_history})
-
-# Display Fifi's response
-st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
-
+    st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
