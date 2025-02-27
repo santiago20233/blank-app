@@ -91,7 +91,7 @@ for message in st.session_state.chat_history[1:]:
 
 # ---------------- CHAT INPUT ---------------- #
 
-user_input = st.chat_input("Talk to fifi...")
+user_input = st.chat_input("Type your question here...")
 
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
@@ -115,21 +115,14 @@ if user_input:
         assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
 
     # Generate topic-specific related articles dynamically for each question
-    topic_keywords = {
-        "baby": ["Baby Sleep Tips", "Newborn Care Basics", "How to Bathe a Baby"],
-        "pregnancy": ["Prenatal Vitamins Guide", "What to Expect in Each Trimester", "Safe Exercises for Pregnant Women"],
-        "postpartum": ["Postpartum Depression Signs", "Breastfeeding 101", "Healing After Birth"]
-    }
-    selected_articles = []
-    for key, articles in topic_keywords.items():
-        if key in user_input.lower():
-            selected_articles = articles
-            break
-
-    if selected_articles:
-        assistant_reply += "\n\n**📚 Related articles for further reading:**"
-        for article in selected_articles:
-            assistant_reply += f"\n- **[{article}](https://example.com/{article.replace(' ', '-').lower()})**"
+    related_articles = [
+        {"title": "Newborn Care 101", "url": "https://example.com/newborn-care", "description": "Essential tips for taking care of your newborn."},
+        {"title": "Pregnancy Nutrition Guide", "url": "https://example.com/pregnancy-nutrition", "description": "Learn about the best foods to eat during pregnancy."},
+        {"title": "Postpartum Recovery Tips", "url": "https://example.com/postpartum-recovery", "description": "How to recover after giving birth and take care of yourself."}
+    ]
+    assistant_reply += "\n\n**📚 Related articles for further reading:**"
+    for article in related_articles:
+        assistant_reply += f"\n- **[{article['title']}]({article['url']})** – {article['description']}"
 
     typing_placeholder.empty()
     st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
