@@ -147,7 +147,7 @@ if user_input:
 
     assistant_reply = f"{response.choices[0].message.content}"
 
-    # ---------------- DYNAMIC RELATED ARTICLES (With Descriptions) ---------------- #
+    # ---------------- DYNAMIC RELATED ARTICLES ---------------- #
 
     related_articles = {
         "belly button": [
