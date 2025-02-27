@@ -91,42 +91,6 @@ if "chat_history" not in st.session_state:
     else:
         st.session_state.chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant who always responds in a warm, supportive, and comforting tone. Your goal is to make users feel heard, validated, and cared for in their motherhood journey."}]
 
-# ---------------- LOAD CHAT HISTORY ---------------- #
-if "chat_history" not in st.session_state:
-    if user_id and chat_ref.get().exists:
-        st.session_state.chat_history = chat_ref.get().to_dict()["history"]
-    else:
-        st.session_state.chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant who always responds in a warm, supportive, and comforting tone. Your goal is to make users feel heard, validated, and cared for in their motherhood journey."}]
-
-# ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
-suggested_questions = {
-    "👶 Baby Care": [
-        "When does the belly button fall off?",
-        "When should my baby start doing tummy time?",
-        "How do I establish a sleep routine for my newborn?",
-        "When is it recommended to introduce solid foods?"
-    ],
-    "🤱 Postpartum Recovery": [
-        "How can I care for my C-section wound?",
-        "What should I expect during postpartum recovery?"
-    ],
-    "🤰 Pregnancy": [
-        "How to avoid stretch marks during my pregnancy?",
-        "What are the essential vitamins and nutrients I should take?"
-    ]
-}
-
-with st.expander("💡 Suggested Questions"):
-    for category, questions in suggested_questions.items():
-        st.markdown(f"**{category}**")
-        for question in questions:
-            st.markdown(f"- {question}")
-
-# ---------------- DISPLAY FULL CHAT HISTORY ---------------- #
-for message in st.session_state.chat_history[1:]:  
-    role_class = "user-message" if message["role"] == "user" else "ai-message"
-    st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
-
 # ---------------- CHAT INPUT ---------------- #
 
 user_input = st.chat_input("Talk to fifi...")
@@ -152,33 +116,37 @@ if user_input:
 
     assistant_reply = f"{response.choices[0].message.content}"
 
-    # ---------------- DYNAMIC RELATED ARTICLES ---------------- #
+    # ---------------- DYNAMIC RELATED ARTICLES (Up to 3) ---------------- #
 
     related_articles = {
-        "belly button": ["**[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."],
-        "c-section": ["**[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."],
-        "fever": ["**[Baby Fever Guide](https://example.com/baby-fever)** – How to manage and when to worry about a baby’s fever."],
-        "postpartum": ["**[Postpartum Recovery Tips](https://example.com/postpartum-recovery)** – What to expect and how to care for yourself after birth."],
-        "solid foods": ["**[Introducing Solids](https://example.com/starting-solids)** – A step-by-step guide for when and how to start solids."],
-        "sleep routine": ["**[Newborn Sleep Guide](https://example.com/newborn-sleep)** – Expert tips for better baby sleep."],
-        "stretch marks": ["**[Preventing Stretch Marks](https://example.com/stretch-marks)** – How to minimize stretch marks during pregnancy."],
+        "belly button": [
+            ("[Baby Belly Button Care](https://example.com/belly-button-care)", "How to care for your newborn’s belly button."),
+            ("[Newborn Umbilical Cord Tips](https://example.com/umbilical-care)", "What to do until the cord falls off."),
+            ("[Infections in Newborns](https://example.com/newborn-infections)", "How to identify and prevent infections.")
+        ],
+        "c-section": [
+            ("[C-Section Recovery Guide](https://example.com/c-section-recovery)", "Healing tips after a C-section."),
+            ("[Postpartum Pain Management](https://example.com/postpartum-pain)", "How to manage pain after surgery."),
+            ("[C-Section Scar Care](https://example.com/scar-care)", "How to take care of your scar to reduce marks.")
+        ],
+        "fever": [
+            ("[When to Worry About a Baby’s Fever](https://example.com/baby-fever)", "Signs of concern for a high fever."),
+            ("[How to Reduce a Baby’s Fever](https://example.com/reduce-fever)", "Steps to lower fever safely."),
+            ("[Common Childhood Illnesses](https://example.com/common-illnesses)", "Symptoms and treatments for common illnesses.")
+        ]
     }
 
-    # Find matching articles based on keywords in user input
+    # Find 2-3 related articles
     matched_articles = []
     for keyword, articles in related_articles.items():
         if keyword in user_input.lower():
-            matched_articles.extend(articles)
+            matched_articles.extend(articles[:3])  # Take up to 3 related articles
 
-    # 🚀 DEBUG PRINTS - REMOVE THIS AFTER TESTING
-    print("User Input:", user_input)
-    print("Matched Articles:", matched_articles)
-
-    # Append related articles if any matches
+    # Append related articles if any match
     if matched_articles:
         assistant_reply += "\n\n**📚 Related articles:**"
-        for article in matched_articles:
-            assistant_reply += f"\n- {article}"
+        for title, description in matched_articles:
+            assistant_reply += f"\n- **{title}** – {description}"
 
     # Remove typing indicator
     typing_placeholder.empty()
