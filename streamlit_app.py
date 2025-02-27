@@ -153,16 +153,14 @@ if user_input:
         "belly button": [
             ("[Baby Belly Button Care](https://example.com/belly-button-care)", "How to care for your newborn’s belly button."),
             ("[Newborn Umbilical Cord Tips](https://example.com/umbilical-care)", "What to do until the cord falls off."),
-            ("[Infections in Newborns](https://example.com/newborn-infections)", "How to identify and prevent infections.")
         ],
         "c-section": [
             ("[C-Section Recovery Guide](https://example.com/c-section-recovery)", "Healing tips after a C-section."),
             ("[Postpartum Pain Management](https://example.com/postpartum-pain)", "How to manage pain after surgery."),
-            ("[C-Section Scar Care](https://example.com/scar-care)", "How to take care of your scar to reduce marks.")
         ]
     }
 
-    # Find 2-3 related articles
+    # Find related articles
     matched_articles = []
     for keyword, articles in related_articles.items():
         if keyword in user_input.lower():
@@ -171,7 +169,7 @@ if user_input:
     if matched_articles:
         assistant_reply += "\n\n**📚 Related articles:**"
         for title, description in matched_articles:
-            assistant_reply += f"\n- **{title}** – {description}"
+            assistant_reply += f"\n- **[{title}]** – {description}"
 
     # Remove typing indicator
     typing_placeholder.empty()
