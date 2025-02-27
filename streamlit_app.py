@@ -29,17 +29,23 @@ def fetch_related_articles(query):
     response = requests.get(search_url, headers=headers)
     
     articles = []
+    
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, "html.parser")
-        results = soup.find_all("a", href=True)
-        
-        for link in results[:3]:  # Limit to 3 articles
-            href = link.get("href")
-            if "/url?q=" in href:
-                url = href.split("/url?q=")[1].split("&")[0]
-                title = url.split("/")[-1].replace("-", " ").title()
-                articles.append({"title": title, "url": url})
-    
+        results = soup.find_all("div", class_="tF2Cxc", limit=3)  # Improved accuracy
+
+        for result in results:
+            title_tag = result.find("h3")
+            link_tag = result.find("a")
+            desc_tag = result.find("span", class_="aCOpRe")  # Extracts snippet/description
+
+            if title_tag and link_tag:
+                title = title_tag.text.strip()
+                url = link_tag["href"]
+                description = desc_tag.text.strip() if desc_tag else "No description available."
+
+                articles.append({"title": title, "url": url, "description": description})
+
     return articles
 
 # ---------------- UI CUSTOMIZATION ---------------- #
@@ -171,9 +177,9 @@ if user_input:
     articles = fetch_related_articles(user_input)
     
     if articles:
-        assistant_reply += "\n\n**📚 Related articles for further reading:**"
-        for article in articles:
-            assistant_reply += f"\n- **[{article['title']}]({article['url']})**"
+    assistant_reply += "\n\n**📚 Related articles for further reading:**"
+    for article in articles:
+        assistant_reply += f"\n- **[{article['title']}]({article['url']})** – {article['description']}"
     
     typing_placeholder.empty()
     
