@@ -91,6 +91,37 @@ if "chat_history" not in st.session_state:
     else:
         st.session_state.chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant who always responds in a warm, supportive, and comforting tone. Your goal is to make users feel heard, validated, and cared for in their motherhood journey."}]
 
+# ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
+
+suggested_questions = {
+    "👶 Baby Care": [
+        "When does the belly button fall off?",
+        "When should my baby start doing tummy time?",
+        "How do I establish a sleep routine for my newborn?",
+        "When is it recommended to introduce solid foods?"
+    ],
+    "🤱 Postpartum Recovery": [
+        "How can I care for my C-section wound?",
+        "What should I expect during postpartum recovery?"
+    ],
+    "🤰 Pregnancy": [
+        "How to avoid stretch marks during my pregnancy?",
+        "What are the essential vitamins and nutrients I should take?"
+    ]
+}
+
+with st.expander("💡 Suggested Questions"):
+    for category, questions in suggested_questions.items():
+        st.markdown(f"**{category}**")
+        for question in questions:
+            st.markdown(f"- {question}")
+
+# ---------------- DISPLAY FULL CHAT HISTORY ---------------- #
+
+for message in st.session_state.chat_history[1:]:  
+    role_class = "user-message" if message["role"] == "user" else "ai-message"
+    st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
+
 # ---------------- CHAT INPUT ---------------- #
 
 user_input = st.chat_input("Talk to fifi...")
@@ -128,11 +159,6 @@ if user_input:
             ("[C-Section Recovery Guide](https://example.com/c-section-recovery)", "Healing tips after a C-section."),
             ("[Postpartum Pain Management](https://example.com/postpartum-pain)", "How to manage pain after surgery."),
             ("[C-Section Scar Care](https://example.com/scar-care)", "How to take care of your scar to reduce marks.")
-        ],
-        "fever": [
-            ("[When to Worry About a Baby’s Fever](https://example.com/baby-fever)", "Signs of concern for a high fever."),
-            ("[How to Reduce a Baby’s Fever](https://example.com/reduce-fever)", "Steps to lower fever safely."),
-            ("[Common Childhood Illnesses](https://example.com/common-illnesses)", "Symptoms and treatments for common illnesses.")
         ]
     }
 
@@ -140,9 +166,8 @@ if user_input:
     matched_articles = []
     for keyword, articles in related_articles.items():
         if keyword in user_input.lower():
-            matched_articles.extend(articles[:3])  # Take up to 3 related articles
+            matched_articles.extend(articles[:3])
 
-    # Append related articles if any match
     if matched_articles:
         assistant_reply += "\n\n**📚 Related articles:**"
         for title, description in matched_articles:
