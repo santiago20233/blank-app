@@ -20,6 +20,34 @@ db = firestore.client()
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=openai_api_key)
 
+import requests
+from bs4 import BeautifulSoup
+
+def fetch_related_articles(query):
+    search_url = f"https://www.google.com/search?q={query.replace(' ', '+')}+site:healthline.com"
+    headers = {"User-Agent": "Mozilla/5.0"}
+    response = requests.get(search_url, headers=headers)
+    
+    articles = []
+    
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, "html.parser")
+        results = soup.find_all("div", class_="tF2Cxc", limit=3)  
+
+        for result in results:
+            title_tag = result.find("h3")
+            link_tag = result.find("a")
+            desc_tag = result.find("span", class_="aCOpRe")
+
+            if title_tag and link_tag:
+                title = title_tag.text.strip()
+                url = link_tag["href"]
+                description = desc_tag.text.strip() if desc_tag else "No description available."
+
+                articles.append({"title": title, "url": url, "description": description})
+
+    return articles
+
 # ---------------- UI CUSTOMIZATION ---------------- #
 
 st.markdown("""
@@ -157,11 +185,14 @@ if user_input:
     if any(word in user_input.lower() for word in ["fever", "sick", "infection", "pain", "rash", "vomiting", "diarrhea"]):
         assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
 
-    # Add related links with descriptions
+# Fetch related articles
+articles = fetch_related_articles(user_input)
+
+if articles:
     assistant_reply += "\n\n**📚 Related articles for further reading:**"
-    assistant_reply += f"\n- **[{article['title']}]({article['url']})** – {article['description']}"
-    assistant_reply += f"\n- **[{article['title']}]({article['url']})** – {article['description']}"
-    assistant_reply += f"\n- **[{article['title']}]({article['url']})** – {article['description']}"
+    for article in articles:
+        assistant_reply += f"\n- **[{article['title']}]({article['url']})** – {article['description']}"
+
     
     # Remove typing indicator
     typing_placeholder.empty()
