@@ -25,12 +25,32 @@ from bs4 import BeautifulSoup
 
 def fetch_related_articles(query):
     # Ensure query is a string
-query = query.strip() if query else "pregnancy tips"
+    query = query.strip() if query else "pregnancy tips"
 
-search_url = f"https://www.google.com/search?q={query.replace(' ', '+')}+site:healthline.com"
-
+    search_url = f"https://www.google.com/search?q={query.replace(' ', '+')}+site:healthline.com"
     headers = {"User-Agent": "Mozilla/5.0"}
     response = requests.get(search_url, headers=headers)
+
+    articles = []
+
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, "html.parser")
+        results = soup.find_all("div", class_="tF2Cxc", limit=3)  
+
+        for result in results:
+            title_tag = result.find("h3")
+            link_tag = result.find("a")
+            desc_tag = result.find("span", class_="aCOpRe")
+
+            if title_tag and link_tag:
+                title = title_tag.text.strip()
+                url = link_tag["href"]
+                description = desc_tag.text.strip() if desc_tag else "No description available."
+
+                articles.append({"title": title, "url": url, "description": description})
+
+    return articles
+
     
     articles = []
     
