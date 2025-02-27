@@ -147,28 +147,28 @@ if user_input:
 
     assistant_reply = f"{response.choices[0].message.content}"
 
-    # ---------------- DYNAMIC RELATED ARTICLES (Up to 3) ---------------- #
+    # ---------------- DYNAMIC RELATED ARTICLES (With Descriptions) ---------------- #
 
     related_articles = {
         "belly button": [
-            ("Baby Belly Button Care", "How to care for your newborn’s belly button.", "https://example.com/belly-button-care"),
-            ("Newborn Umbilical Cord Tips", "What to do until the cord falls off.", "https://example.com/umbilical-care"),
+            ("[Baby Belly Button Care](https://example.com/belly-button-care)", "How to properly care for your newborn’s belly button."),
+            ("[Newborn Umbilical Cord Tips](https://example.com/umbilical-care)", "Guidance on umbilical cord healing."),
         ],
         "c-section": [
-            ("C-Section Recovery Guide", "Healing tips after a C-section.", "https://example.com/c-section-recovery"),
-            ("Postpartum Pain Management", "How to manage pain after surgery.", "https://example.com/postpartum-pain"),
+            ("[C-Section Recovery Guide](https://example.com/c-section-recovery)", "Healing and self-care after a C-section."),
+            ("[Postpartum Pain Management](https://example.com/postpartum-pain)", "How to manage pain and recovery."),
         ]
     }
 
     matched_articles = []
     for keyword, articles in related_articles.items():
         if keyword in user_input.lower():
-            matched_articles.extend(articles[:3])
+            matched_articles.extend(articles[:3])  # Get up to 3 related articles
 
     if matched_articles:
         assistant_reply += "\n\n**📚 Related articles:**"
-        for title, description, link in matched_articles:
-            assistant_reply += f"\n- **[{title}]({link})** – {description}"
+        for title, description in matched_articles:
+            assistant_reply += f"\n- **{title}** – {description}"
 
     # Remove typing indicator
     typing_placeholder.empty()
