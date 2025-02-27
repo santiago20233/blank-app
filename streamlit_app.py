@@ -25,7 +25,7 @@ client = OpenAI(api_key=openai_api_key)
 st.markdown("""
     <style>
         .title-container { text-align: center; margin-bottom: 10px; }
-        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; } /* BIG & PINK */
+        .title { font-size: 50px; font-weight: bold; color: #ff69b4; text-transform: uppercase; }
         .subtitle { font-size: 18px; font-weight: normal; color: #666; }
         .chat-container { display: flex; flex-direction: column; align-items: center; max-width: 600px; margin: auto; }
         .chat-bubble { padding: 12px; border-radius: 16px; margin: 8px 0; font-size: 16px; width: fit-content; max-width: 80%; }
@@ -75,9 +75,9 @@ if "show_login" in st.session_state and st.session_state.show_login:
                 user = auth.create_user(email=email, password=password)
                 st.session_state.user_id = user.uid
                 db.collection("users").document(user.uid).set({
-    "email": email,
-    "sign_up_date": firestore.SERVER_TIMESTAMP
-})
+                    "email": email,
+                    "sign_up_date": firestore.SERVER_TIMESTAMP
+                })
                 st.success("Account created! Please log in.")
                 st.rerun()
             except:
@@ -99,30 +99,6 @@ if "chat_history" not in st.session_state:
     else:
         st.session_state.chat_history = [{"role": "system", "content": "You are Fifi, a pregnancy and baby care assistant who always responds in a warm, supportive, and comforting tone. Your goal is to make users feel heard, validated, and cared for in their motherhood journey."}]
 
-# ---------------- SUGGESTED QUESTIONS (DROPDOWN) ---------------- #
-suggested_questions = {
-    "👶 Baby Care": [
-        "When does the belly button fall off?",
-        "When should my baby start doing tummy time?",
-        "How do I establish a sleep routine for my newborn?",
-        "When is it recommended to introduce solid foods?"
-    ],
-    "🤱 Postpartum Recovery": [
-        "How can I care for my C-section wound?",
-        "What should I expect during postpartum recovery?"
-    ],
-    "🤰 Pregnancy": [
-        "How to avoid stretch marks during my pregnancy?",
-        "What are the essential vitamins and nutrients I should take?"
-    ]
-}
-
-with st.expander("💡 Suggested Questions"):
-    for category, questions in suggested_questions.items():
-        st.markdown(f"**{category}**")
-        for question in questions:
-            st.markdown(f"- {question}")
-
 # ---------------- DISPLAY FULL CHAT HISTORY ---------------- #
 for message in st.session_state.chat_history[1:]:  
     role_class = "user-message" if message["role"] == "user" else "ai-message"
@@ -131,6 +107,46 @@ for message in st.session_state.chat_history[1:]:
 # ---------------- CHAT INPUT ---------------- #
 
 user_input = st.chat_input("Talk to fifi...")
+
+# ---------------- FUNCTION: GENERATE RELATED ARTICLES ---------------- #
+def get_related_articles(user_input):
+    related_articles = {
+        "baby": [
+            ("Newborn Sleep Tips", "https://example.com/newborn-sleep"),
+            ("Diaper Rash Prevention", "https://example.com/diaper-rash"),
+            ("How to Bathe a Newborn", "https://example.com/bathing-newborn"),
+        ],
+        "pregnancy": [
+            ("Pregnancy Nutrition Guide", "https://example.com/pregnancy-nutrition"),
+            ("First Trimester Symptoms", "https://example.com/first-trimester"),
+            ("Safe Exercises During Pregnancy", "https://example.com/pregnancy-exercise"),
+        ],
+        "postpartum": [
+            ("C-Section Recovery Guide", "https://example.com/c-section-recovery"),
+            ("Postpartum Depression Support", "https://example.com/postpartum-depression"),
+            ("Breastfeeding Tips for New Moms", "https://example.com/breastfeeding-tips"),
+        ],
+    }
+
+    # Identify category based on keywords in user input
+    keywords = user_input.lower().split()
+    matched_category = None
+    for category in related_articles.keys():
+        if any(keyword in category for keyword in keywords):
+            matched_category = category
+            break
+
+    # Generate response with dynamic articles
+    articles_text = "\n\n**📚 Related articles for further reading:**"
+    if matched_category:
+        for title, link in related_articles[matched_category]:
+            articles_text += f"\n- **[{title}]({link})**"
+    else:
+        articles_text += "\n- **[General Motherhood Guide](https://example.com/motherhood-guide)**"
+
+    return articles_text
+
+# ---------------- PROCESS USER MESSAGE ---------------- #
 
 if user_input:
     st.session_state.chat_history.append({"role": "user", "content": user_input})
@@ -143,7 +159,7 @@ if user_input:
     with typing_placeholder:
         st.markdown("<div class='typing-indicator'>typing...</div>", unsafe_allow_html=True)
 
-    # Get response
+    # Get AI response
     response = client.chat.completions.create(
         model="gpt-4",
         messages=st.session_state.chat_history,
@@ -157,20 +173,15 @@ if user_input:
     if any(word in user_input.lower() for word in ["fever", "sick", "infection", "pain", "rash", "vomiting", "diarrhea"]):
         assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
 
-    # Add related links with descriptions
-    assistant_reply += "\n\n**📚 Related articles for further reading:**"
-    assistant_reply += "\n- **[Baby Belly Button Care](https://example.com/belly-button-care)** – Learn how to properly care for your newborn’s belly button."
-    assistant_reply += "\n- **[C-Section Recovery Guide](https://example.com/c-section-recovery)** – Tips for healing and taking care of yourself after a C-section."
+    # Add dynamic related articles
+    assistant_reply += get_related_articles(user_input)
 
     # Remove typing indicator
     typing_placeholder.empty()
 
-    # Add response to chat history
-    st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
-
-    # Save chat history only if user is logged in
+    # Save chat history if user is logged in
     if user_id:
         chat_ref.set({"history": st.session_state.chat_history})
 
-    # Display Fifi's response
+    # Display response
     st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
