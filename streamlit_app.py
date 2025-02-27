@@ -24,7 +24,11 @@ import requests
 from bs4 import BeautifulSoup
 
 def fetch_related_articles(query):
-    search_url = f"https://www.google.com/search?q={query.replace(' ', '+')}+site:healthline.com"
+    # Ensure query is a string
+query = query.strip() if query else "pregnancy tips"
+
+search_url = f"https://www.google.com/search?q={query.replace(' ', '+')}+site:healthline.com"
+
     headers = {"User-Agent": "Mozilla/5.0"}
     response = requests.get(search_url, headers=headers)
     
@@ -185,8 +189,11 @@ if user_input:
     if any(word in user_input.lower() for word in ["fever", "sick", "infection", "pain", "rash", "vomiting", "diarrhea"]):
         assistant_reply += "\n\n⚠️ **Disclaimer:** I am not a doctor. If this issue is serious or persists, please seek medical attention."
 
-# Fetch related articles
-articles = fetch_related_articles(user_input)
+# Ensure user_input is always a string
+user_input = user_input.strip() if user_input else ""
+
+# Fetch related articles only if user_input is not empty
+articles = fetch_related_articles(user_input) if user_input else []
 
 if articles:
     assistant_reply += "\n\n**📚 Related articles for further reading:**"
