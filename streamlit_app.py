@@ -129,8 +129,14 @@ if user_input:
     }
 
     # Find matching articles based on keywords in user input
-    matched_articles = [articles for keyword, articles in related_articles.items() if keyword in user_input.lower()]
-    matched_articles = [article for sublist in matched_articles for article in sublist]  # Flatten list
+    matched_articles = []
+    for keyword, articles in related_articles.items():
+        if keyword in user_input.lower():
+            matched_articles.extend(articles)
+
+    # 🚀 DEBUG PRINTS - REMOVE THIS AFTER TESTING
+    print("User Input:", user_input)
+    print("Matched Articles:", matched_articles)
 
     # Append related articles if any matches
     if matched_articles:
