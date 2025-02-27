@@ -176,10 +176,13 @@ if user_input:
     
     articles = fetch_related_articles(user_input)
     
-if articles:
+articles = fetch_related_articles(user_input) if 'fetch_related_articles' in globals() else []
+
+if articles:  
     assistant_reply += "\n\n**📚 Related articles for further reading:**"
     for article in articles:
         assistant_reply += f"\n- **[{article['title']}]({article['url']})** – {article['description']}"
+
     
     typing_placeholder.empty()
     
