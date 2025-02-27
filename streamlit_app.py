@@ -146,46 +146,37 @@ if user_input:
     )
 
     assistant_reply = f"{response.choices[0].message.content}"
-    
-# ---------------- DYNAMIC RELATED ARTICLES ---------------- #
 
-related_articles = {
-    "belly button": [
-        ("[Baby Belly Button Care](https://example.com/belly-button-care)", "How to properly care for your newborn’s belly button."),
-        ("[Newborn Umbilical Cord Tips](https://example.com/umbilical-care)", "Guidance on umbilical cord healing."),
-    ],
-    "c-section": [
-        ("[C-Section Recovery Guide](https://example.com/c-section-recovery)", "Healing and self-care after a C-section."),
-        ("[Postpartum Pain Management](https://example.com/postpartum-pain)", "How to manage pain and recovery."),
-    ],
-    "fever": [
-        ("[Baby Fever Guide](https://example.com/baby-fever)", "How to identify and treat a baby's fever."),
-        ("[When to Worry About a Fever](https://example.com/fever-warning-signs)", "Signs that a fever may need medical attention."),
-    ],
-    "postpartum": [
-        ("[Postpartum Recovery Tips](https://example.com/postpartum-recovery)", "What to expect and how to take care of yourself after birth."),
-        ("[Managing Postpartum Emotions](https://example.com/postpartum-emotions)", "Coping with mood swings and baby blues."),
-    ],
-    "solid foods": [
-        ("[Introducing Solids](https://example.com/starting-solids)", "A step-by-step guide to transitioning your baby to solid foods."),
-        ("[Best First Foods for Babies](https://example.com/best-first-foods)", "Recommended foods to start with."),
-    ],
-    "sleep routine": [
-        ("[Newborn Sleep Guide](https://example.com/newborn-sleep)", "How to establish healthy sleep habits."),
-        ("[How to Help Your Baby Sleep Through the Night](https://example.com/baby-sleep-tips)", "Tips for improving baby sleep."),
-    ],
-    "stretch marks": [
-        ("[Preventing Stretch Marks](https://example.com/stretch-marks)", "Tips to minimize stretch marks during pregnancy."),
-        ("[Best Oils for Stretch Marks](https://example.com/stretch-mark-oils)", "Recommended oils to improve skin elasticity."),
-    ]
-}
+    # ---------------- DYNAMIC RELATED ARTICLES ---------------- #
 
-matched_articles = []
-for keyword, articles in related_articles.items():
-    if keyword in user_input.lower():
-        matched_articles.extend(articles[:3])  # Show up to 3 relevant articles
+    related_articles = {
+        "belly button": [
+            ("[Baby Belly Button Care](https://example.com/belly-button-care)", "How to properly care for your newborn’s belly button."),
+            ("[Newborn Umbilical Cord Tips](https://example.com/umbilical-care)", "Guidance on umbilical cord healing."),
+        ],
+        "c-section": [
+            ("[C-Section Recovery Guide](https://example.com/c-section-recovery)", "Healing and self-care after a C-section."),
+            ("[Postpartum Pain Management](https://example.com/postpartum-pain)", "How to manage pain and recovery."),
+        ],
+    }
 
-if matched_articles:
-    assistant_reply += "\n\n**📚 Related articles:**"
-    for title, description in matched_articles:
-        assistant_reply += f"\n- **{title}** – {description}"
+    matched_articles = []
+    for keyword, articles in related_articles.items():
+        if keyword in user_input.lower():
+            matched_articles.extend(articles[:3])  # Show up to 3 relevant articles
+
+    if matched_articles:
+        assistant_reply += "\n\n**📚 Related articles:**"
+        for title, description in matched_articles:
+            assistant_reply += f"\n- **{title}** – {description}"
+
+    # Remove typing indicator
+    typing_placeholder.empty()
+
+    # Save chat history
+    st.session_state.chat_history.append({"role": "assistant", "content": assistant_reply})
+    if user_id:
+        chat_ref.set({"history": st.session_state.chat_history})
+
+    # Display assistant response
+    st.markdown(f"<div class='chat-container'><div class='chat-bubble ai-message'>{assistant_reply}</div></div>", unsafe_allow_html=True)
