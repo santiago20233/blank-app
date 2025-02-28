@@ -75,9 +75,10 @@ if "show_login" in st.session_state and st.session_state.show_login:
                 user = auth.create_user(email=email, password=password)
                 st.session_state.user_id = user.uid
                 db.collection("users").document(user.uid).set({
-    "email": email,
-    "sign_up_date": firestore.SERVER_TIMESTAMP
-})
+                    "email": email,
+                    "pregnancy_weeks": None,
+                    "baby_age_months": None
+                })
                 st.success("Account created! Please log in.")
                 st.rerun()
             except:
