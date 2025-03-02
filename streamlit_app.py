@@ -33,7 +33,6 @@ st.markdown("""
         .chat-bubble { padding: 12px; border-radius: 16px; margin: 8px 0; font-size: 16px; width: fit-content; max-width: 80%; }
         .user-message { background-color: #4a90e2; color: white; align-self: flex-end; }
         .ai-message { background-color: #f1f1f1; border: 1px solid #ddd; color: black; align-self: flex-start; }
-        .typing-indicator { font-size: 14px; color: #888; font-style: italic; margin-top: 5px; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -123,7 +122,7 @@ with st.expander("💡 Suggested Questions"):
             st.markdown(f"- {question}")
 
 # ---------------- DISPLAY FULL CHAT HISTORY ---------------- #
-for message in st.session_state.chat_history[1:]:
+for message in st.session_state.chat_history[1:]:  # Skip system message
     role_class = "user-message" if message["role"] == "user" else "ai-message"
     st.markdown(f"<div class='chat-container'><div class='chat-bubble {role_class}'>{message['content']}</div></div>", unsafe_allow_html=True)
 
